@@ -64,7 +64,6 @@ dependencies = [
  "buddy_system_allocator",
  "fdt-rs",
  "riscv",
- "riscv-rt",
  "sbi",
  "spin",
 ]
@@ -154,35 +153,6 @@ dependencies = [
  "quote",
  "syn 2.0.117",
 ]
-
-[[package]]
-name = "riscv-rt"
-version = "0.17.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "45609650ada38c712be90e463028a3d7e35569de139dd800aa62946b5a403374"
-dependencies = [
- "riscv",
- "riscv-rt-macros",
- "riscv-target-parser",
- "riscv-types",
-]
-
-[[package]]
-name = "riscv-rt-macros"
-version = "0.6.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "def519ddeeb5e43c2b4fc3952c27b3a86782fc05192f322b2309125cd85b1fc3"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.117",
-]
-
-[[package]]
-name = "riscv-target-parser"
-version = "0.1.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1376b15f3ff160e9b1e8ea564ce427f2f6fcf77528cc0a8bf405cb476f9cea7"
 
 [[package]]
 name = "riscv-types"
