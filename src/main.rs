@@ -5,6 +5,7 @@ mod device_tree_utils;
 mod panic_handler;
 mod system_utils;
 mod timer_interrupt;
+mod thread;
 
 use buddy_system_allocator::LockedHeap;
 
@@ -13,7 +14,7 @@ unsafe extern "C" {
 }
 
 #[global_allocator]
-static HEAP: LockedHeap<32> = LockedHeap::empty();
+pub static HEAP: LockedHeap<32> = LockedHeap::empty();
 
 #[riscv_rt::entry]
 fn main(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {

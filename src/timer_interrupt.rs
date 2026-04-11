@@ -1,13 +1,10 @@
 use riscv::{interrupt::supervisor::Interrupt, register::time};
 use sbi::timer;
 
-use crate::println;
-
 static mut TIME_QUANTA: u64 = 0;
 
 #[riscv_rt::core_interrupt(Interrupt::SupervisorTimer)]
 fn supervisor_timer_interrupt() {
-    println!("Hello");
     timer::set_timer(time::read64() + unsafe { TIME_QUANTA }).unwrap();
     return;
 }
