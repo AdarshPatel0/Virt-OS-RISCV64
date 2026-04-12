@@ -8,4 +8,5 @@ buddy_system_allocator = "0.13.0"
 fdt-rs = { version = "0.4.5", default-features = false }
 riscv = { version = "0.16.0", features = ["s-mode"] }
 sbi = "0.3.0"
+slab = {version = "0.4.12", default-features = false}
 spin = "0.10.0"
