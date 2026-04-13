@@ -1,5 +1,5 @@
 #[repr(C)]
-#[derive(Default)]
+#[derive(Default, Copy, Clone)]
 pub struct Context {
     pub ra: usize,
     pub sp: usize,
@@ -40,10 +40,4 @@ pub struct Context {
 
     pub sstatus: usize,
     pub sepc: usize,
-}
-
-pub struct Thread {
-    context: Context,
-    memory_start: usize,
-    memory_end: usize
 }

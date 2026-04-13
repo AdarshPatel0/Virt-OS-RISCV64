@@ -1,6 +1,6 @@
 use core::slice;
 
-use crate::{print, thread::Context};
+use crate::{print, thread::context::Context};
 
 pub fn call(context: &mut Context) {
     context.sepc = context.sepc + 4;

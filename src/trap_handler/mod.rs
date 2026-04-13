@@ -1,15 +1,16 @@
 mod entry;
 
-use crate::{ecall, thread, timer_interrupt};
+use crate::{ecall, println, thread, timer_interrupt};
 
 #[unsafe(no_mangle)]
-extern "C" fn trap_handler(context: &mut thread::Context) {
+extern "C" fn trap_handler(context: &mut thread::context::Context) {
     let raw_trap = riscv::register::scause::read().cause();
     let trap: riscv::interrupt::Trap<riscv::interrupt::Interrupt, riscv::interrupt::Exception> = raw_trap.try_into().unwrap();
     match trap {
         riscv::interrupt::Trap::Interrupt(interrupt) => match interrupt {
             riscv::interrupt::Interrupt::SupervisorSoft => todo!(),
             riscv::interrupt::Interrupt::SupervisorTimer => {
+                thread::schedule(context);
                 timer_interrupt::timer_interrupt();
             }
             riscv::interrupt::Interrupt::SupervisorExternal => todo!(),
@@ -24,9 +25,11 @@ extern "C" fn trap_handler(context: &mut thread::Context) {
             riscv::interrupt::Exception::StoreMisaligned => todo!(),
             riscv::interrupt::Exception::StoreFault => todo!(),
             riscv::interrupt::Exception::UserEnvCall => {
+                println!("ecall made");
                 ecall::call(context);
             }
             riscv::interrupt::Exception::SupervisorEnvCall => {
+                println!("ecall made");
                 ecall::call(context);
             }
             riscv::interrupt::Exception::InstructionPageFault => todo!(),
