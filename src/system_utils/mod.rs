@@ -2,6 +2,7 @@ pub mod console_utils;
 
 use sbi::system_reset::{ResetReason, ResetType};
 
+#[allow(dead_code)]
 pub fn shutdown() -> ! {
     match sbi::system_reset::system_reset(ResetType::Shutdown, ResetReason::NoReason) {
         Ok(_) => loop {},

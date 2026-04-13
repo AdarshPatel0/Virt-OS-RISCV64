@@ -1,4 +1,5 @@
 #[repr(C)]
+#[derive(Default)]
 pub struct Context {
     pub ra: usize,
     pub sp: usize,
@@ -40,4 +41,3 @@ pub struct Context {
     pub sstatus: usize,
     pub sepc: usize,
 }
-
