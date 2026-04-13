@@ -1,4 +1,4 @@
-pub mod entry;
+mod entry;
 
 use crate::{ecall, thread, timer_interrupt};
 
@@ -35,4 +35,11 @@ extern "C" fn trap_handler(context: &mut thread::Context) {
         },
     }
     return;
+}
+
+pub fn init() {
+    unsafe {
+        riscv::register::stvec::write(riscv::register::stvec::Stvec::new(entry::trap_handler_entry as *const u8 as usize, riscv::register::stvec::TrapMode::Direct));
+        riscv::interrupt::enable();
+    }
 }

@@ -41,3 +41,9 @@ pub struct Context {
     pub sstatus: usize,
     pub sepc: usize,
 }
+
+pub struct Thread {
+    context: Context,
+    memory_start: usize,
+    memory_end: usize
+}
