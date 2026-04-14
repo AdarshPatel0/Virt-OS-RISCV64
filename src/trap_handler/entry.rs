@@ -56,6 +56,10 @@ pub unsafe extern "C" fn trap_handler_entry() {
         csrr t0, sepc
         sd   t0, 32*8(sp)
 
+        ld t0, 1*8(sp)
+        addi t0, t0, 264
+        sd t0, 1*8(sp)
+
         # -------------------------
         # Call Rust handler
         # -------------------------
@@ -111,12 +115,6 @@ pub unsafe extern "C" fn trap_handler_entry() {
         ld t4,  28*8(sp)
         ld t5,  29*8(sp)
         ld t6,  30*8(sp)
-
-        # Restore original sp from context
-        ld sp, 1*8(sp)
-
-        # Free stack frame (restore original stack pointer already done above logically)
-        # (No addi sp needed since sp was restored from context)
 
         sret
         "#

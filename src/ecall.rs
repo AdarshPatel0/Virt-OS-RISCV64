@@ -1,6 +1,6 @@
 use core::slice;
 
-use crate::{print, thread::context::Context};
+use crate::{println, thread::context::Context};
 
 pub fn call(context: &mut Context) {
     context.sepc = context.sepc + 4;
@@ -13,13 +13,13 @@ pub fn call(context: &mut Context) {
             let slice = unsafe { slice::from_raw_parts(string_pointer, string_length) };
             match str::from_utf8(slice) {
                 Ok(string) => {
-                    print!("{}", string);
+                    println!("{}", string);
                 }
                 Err(_) => context.a0 = 1,
             }
         }
         1 => {
-            print!("{}", context.a0);
+            println!("{}", context.a0);
         }
         _ => {
             return;

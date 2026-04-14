@@ -1,6 +1,6 @@
-mod entry;
+pub mod entry;
 
-use crate::{ecall, println, thread, timer_interrupt};
+use crate::{println, ecall, thread, timer_interrupt};
 
 #[unsafe(no_mangle)]
 extern "C" fn trap_handler(context: &mut thread::context::Context) {
@@ -10,6 +10,7 @@ extern "C" fn trap_handler(context: &mut thread::context::Context) {
         riscv::interrupt::Trap::Interrupt(interrupt) => match interrupt {
             riscv::interrupt::Interrupt::SupervisorSoft => todo!(),
             riscv::interrupt::Interrupt::SupervisorTimer => {
+                // println!("Timer Interrupt Occured");
                 thread::schedule(context);
                 timer_interrupt::update_timer();
             }
@@ -25,11 +26,11 @@ extern "C" fn trap_handler(context: &mut thread::context::Context) {
             riscv::interrupt::Exception::StoreMisaligned => todo!(),
             riscv::interrupt::Exception::StoreFault => todo!(),
             riscv::interrupt::Exception::UserEnvCall => {
-                println!("ecall made");
+                println!("User ecall made");
                 ecall::call(context);
             }
             riscv::interrupt::Exception::SupervisorEnvCall => {
-                println!("ecall made");
+                println!("Supervisor ecall made");
                 ecall::call(context);
             }
             riscv::interrupt::Exception::InstructionPageFault => todo!(),
@@ -38,11 +39,4 @@ extern "C" fn trap_handler(context: &mut thread::context::Context) {
         },
     }
     return;
-}
-
-pub fn init() {
-    unsafe {
-        riscv::register::stvec::write(riscv::register::stvec::Stvec::new(entry::trap_handler_entry as *const u8 as usize, riscv::register::stvec::TrapMode::Direct));
-        riscv::interrupt::enable();
-    }
 }

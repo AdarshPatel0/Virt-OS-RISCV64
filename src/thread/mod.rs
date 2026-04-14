@@ -12,11 +12,12 @@ pub struct Thread {
     pub dead: bool,
 }
 
-static mut THREADS: slab::Slab<Thread> = slab::Slab::new();
-static mut QUEUE: alloc::collections::VecDeque<usize> = alloc::collections::VecDeque::new();
-static mut CURRENT: usize = 0;
+pub static mut THREADS: slab::Slab<Thread> = slab::Slab::new();
+pub static mut QUEUE: alloc::collections::VecDeque<usize> = alloc::collections::VecDeque::new();
+pub static mut CURRENT: usize = 0;
 
 pub fn create_thread(entry: usize, privileged: bool) -> usize {
+    println!("{}", entry);
     let thread_stack = alloc::vec![0 as u8; STACK_SIZE].into_boxed_slice();
     let stack_top = thread_stack.as_ptr() as usize + STACK_SIZE;
 
@@ -83,24 +84,24 @@ pub fn schedule(context: &mut thread::context::Context) {
         let threads = &mut *(&raw mut THREADS);
         let queue = &mut *(&raw mut QUEUE);
         let current_thread_id = CURRENT;
-
+        println!("{}: {}", current_thread_id, context.sepc);
         if queue.is_empty() {
-            println!("Nothing to run");
+            // println!("Nothing to run");
             context.sepc = wait as *const u8 as usize;
         } else {
             if let Some(current_thread) = threads.get_mut(current_thread_id) {
                 current_thread.context = *context;
                 if current_thread.dead == false {
-                    println!("Thread halting: {}",current_thread_id);
+                    // println!("Thread halting: {}",current_thread_id);
                     queue.push_back(current_thread_id);
                 } else {
-                    println!("Thread exiting: {}",current_thread_id);
+                    // println!("Thread exiting: {}",current_thread_id);
                     threads.remove(current_thread_id);
                 }
             }
             if let Some(next_thread_id) = queue.pop_front() {
                 if let Some(next_thread) = threads.get_mut(next_thread_id) {
-                    println!("Thread starting: {}",next_thread_id);
+                    // println!("Thread starting: {}",next_thread_id);
                     CURRENT = next_thread_id;
                     *context = next_thread.context;
                     return;

@@ -26,7 +26,7 @@ core::arch::global_asm!(
     "#
 );
 
-fn function() {
+fn func() {
     unsafe {
         core::arch::asm!(
             "
@@ -34,7 +34,7 @@ fn function() {
             li a0, 2
             ecall
             "
-        );
+        )
     }
     loop {}
 }
@@ -53,10 +53,18 @@ pub extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         drop(heap);
     };
 
-    trap_handler::init();
-    timer_interrupt::init(10_000_000);
+    timer_interrupt::set_time_quanta(1_000_000);
 
-    thread::create_thread(function as *const u8 as usize, true);
+    unsafe {
+        riscv::register::stvec::write(riscv::register::stvec::Stvec::new(trap_handler::entry::trap_handler_entry as *const u8 as usize, riscv::register::stvec::TrapMode::Direct));
+        riscv::interrupt::enable();
+        riscv::interrupt::enable_interrupt(riscv::interrupt::supervisor::Interrupt::SupervisorTimer);
+    }
+
+    thread::create_thread(func as *const u8 as usize, false);
+    thread::create_thread(func as *const u8 as usize, false);
+
+    timer_interrupt::update_timer();
 
     loop {
         riscv::asm::wfi();

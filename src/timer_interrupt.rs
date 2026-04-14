@@ -6,10 +6,8 @@ pub fn update_timer() {
     return;
 }
 
-pub fn init(time_quanta: u64) {
+pub fn set_time_quanta(time_quanta: u64) {
     unsafe {
         TIME_QUANTA = time_quanta;
-        riscv::interrupt::enable_interrupt(riscv::interrupt::supervisor::Interrupt::SupervisorTimer);
     }
-    update_timer();
 }
