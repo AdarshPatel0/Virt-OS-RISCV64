@@ -11,7 +11,7 @@ extern "C" fn trap_handler(context: &mut thread::context::Context) {
             riscv::interrupt::Interrupt::SupervisorSoft => todo!(),
             riscv::interrupt::Interrupt::SupervisorTimer => {
                 thread::schedule(context);
-                timer_interrupt::timer_interrupt();
+                timer_interrupt::update_timer();
             }
             riscv::interrupt::Interrupt::SupervisorExternal => todo!(),
         },

@@ -14,7 +14,7 @@ unsafe extern "C" {
 }
 
 #[global_allocator]
-pub static KERNEL_HEAP: buddy_system_allocator::LockedHeap<32> = buddy_system_allocator::LockedHeap::<32>::empty();
+pub static HEAP: buddy_system_allocator::LockedHeap<32> = buddy_system_allocator::LockedHeap::<32>::empty();
 
 core::arch::global_asm!(
     r#"
@@ -26,8 +26,16 @@ core::arch::global_asm!(
     "#
 );
 
-fn function() -> ! {
-    println!("A");
+fn function() {
+    unsafe {
+        core::arch::asm!(
+            "
+            li a7, 1
+            li a0, 2
+            ecall
+            "
+        );
+    }
     loop {}
 }
 
@@ -40,17 +48,15 @@ pub extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
     let kernel_end_address = core::ptr::addr_of!(_kernel_end) as usize;
 
     unsafe {
-        let mut heap = KERNEL_HEAP.lock();
+        let mut heap = HEAP.lock();
         heap.add_to_heap(kernel_end_address, system_memory_base_address + system_memory_amount);
         drop(heap);
     };
 
-    thread::create_thread(function as *const u8 as usize, false);
-    thread::create_thread(function as *const u8 as usize, false);
-    thread::create_thread(function as *const u8 as usize, false);
-
     trap_handler::init();
-    timer_interrupt::init(1_000_000);
+    timer_interrupt::init(10_000_000);
+
+    thread::create_thread(function as *const u8 as usize, true);
 
     loop {
         riscv::asm::wfi();
