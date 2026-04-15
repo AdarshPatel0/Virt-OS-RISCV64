@@ -40,7 +40,7 @@ extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         drop(heap);
     };
 
-    thread::create_thread(main_thread as *const u8 as usize, true);
+    thread::create_thread(main_thread as *const u8 as usize, false);
 
     timer_interrupt::set_time_quanta(10_000_000);
 
@@ -59,15 +59,21 @@ extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
 
 fn main_thread() -> ! {
     loop {
-        match sbi::legacy::console_getchar() {
-            Some(character) => {
-                println!("{}", character as char);
-                break;
-            }
-            None => {
-                continue;
-            }
+        let success: usize;
+        let _character: usize;
+
+        unsafe {
+            core::arch::asm!(
+                "li a7, 14",
+                "ecall",
+                out("a0") success,
+                out("a1") _character,
+                clobber_abi("C"),
+            );
+        }
+
+        if success != 0 {
+            // println!("{}", character);
         }
     }
-    system_utils::shutdown()
 }

@@ -1,7 +1,5 @@
 use core::fmt::{self, Write};
 
-use crate::ecall;
-
 struct Console;
 
 impl Write for Console {
