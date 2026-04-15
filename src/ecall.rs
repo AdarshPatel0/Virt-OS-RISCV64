@@ -17,8 +17,8 @@ pub fn call(context: &mut thread::context::Context) {
             timer_interrupt::update_timer();
         }
         10 => {
-            let character = context.a0 as u8 as char;
-            print!("{}", character);
+            print!("printing char");
+            print!("{}",context.a0);
         }
         11 => {
             let string_pointer = context.a0 as *const u8;
@@ -42,11 +42,9 @@ pub fn call(context: &mut thread::context::Context) {
             match sbi::legacy::console_getchar() {
                 Some(character) => {
                     context.a0 = character as usize;
-                    print!("{}", context.a0 as u8 as char);
+                    return;
                 }
-                None => {
-                    continue;
-                }
+                None => continue,
             }
         },
         _ => {

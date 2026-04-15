@@ -40,7 +40,7 @@ extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         drop(heap);
     };
 
-    thread::create_thread(main_thread as *const u8 as usize, true);
+    thread::create_thread(main_thread as *const u8 as usize, false);
 
     timer_interrupt::set_time_quanta(1_000_000);
 
@@ -60,5 +60,5 @@ extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
 fn main_thread() -> ! {
     let character = system_utils::console_utils::get_char();
     system_utils::console_utils::print_char(character);
-    loop {}
+    system_utils::shutdown()
 }

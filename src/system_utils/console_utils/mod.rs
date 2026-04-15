@@ -82,6 +82,7 @@ pub fn print_string(string: &str) {
 #[allow(dead_code)]
 pub fn print_char(character: u8) {
     let call_code = ecall::get_code(ecall::Ecall::PrintChar);
+    let c = character as usize;
     unsafe {
         core::arch::asm!(
             "
@@ -90,7 +91,7 @@ pub fn print_char(character: u8) {
             ecall
             ",
             in(reg) call_code,
-            in(reg) character,
+            in(reg) c,
         );
     }
 }
