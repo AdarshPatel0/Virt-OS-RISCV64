@@ -1,6 +1,6 @@
 pub mod entry;
 
-use crate::{println, ecall, thread, timer_interrupt};
+use crate::{ecall, thread, timer_interrupt};
 
 #[unsafe(no_mangle)]
 extern "C" fn trap_handler(context: &mut thread::context::Context) {
@@ -10,7 +10,6 @@ extern "C" fn trap_handler(context: &mut thread::context::Context) {
         riscv::interrupt::Trap::Interrupt(interrupt) => match interrupt {
             riscv::interrupt::Interrupt::SupervisorSoft => todo!(),
             riscv::interrupt::Interrupt::SupervisorTimer => {
-                // println!("Timer Interrupt Occured");
                 thread::schedule(context);
                 timer_interrupt::update_timer();
             }
@@ -26,11 +25,9 @@ extern "C" fn trap_handler(context: &mut thread::context::Context) {
             riscv::interrupt::Exception::StoreMisaligned => todo!(),
             riscv::interrupt::Exception::StoreFault => todo!(),
             riscv::interrupt::Exception::UserEnvCall => {
-                println!("User ecall made");
                 ecall::call(context);
             }
             riscv::interrupt::Exception::SupervisorEnvCall => {
-                println!("Supervisor ecall made");
                 ecall::call(context);
             }
             riscv::interrupt::Exception::InstructionPageFault => todo!(),

@@ -30,8 +30,10 @@ fn func() {
     unsafe {
         core::arch::asm!(
             "
-            li a7, 1
-            li a0, 2
+            li  a7, 11
+            li  a0,  2
+            ecall
+            li  a7, 0
             ecall
             "
         )
@@ -53,6 +55,10 @@ pub extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         drop(heap);
     };
 
+    let _thread_a = thread::create_thread(func as *const u8 as usize, false);
+    let _thread_b = thread::create_thread(func as *const u8 as usize, false);
+    let _thread_c = thread::create_thread(func as *const u8 as usize, false);
+
     timer_interrupt::set_time_quanta(1_000_000);
 
     unsafe {
@@ -60,9 +66,6 @@ pub extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         riscv::interrupt::enable();
         riscv::interrupt::enable_interrupt(riscv::interrupt::supervisor::Interrupt::SupervisorTimer);
     }
-
-    thread::create_thread(func as *const u8 as usize, false);
-    thread::create_thread(func as *const u8 as usize, false);
 
     timer_interrupt::update_timer();
 

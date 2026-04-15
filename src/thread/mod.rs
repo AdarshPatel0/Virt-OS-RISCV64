@@ -1,4 +1,4 @@
-use crate::{println, thread};
+use crate::thread;
 
 pub mod context;
 
@@ -8,16 +8,15 @@ static STACK_SIZE: usize = 4096;
 
 pub struct Thread {
     pub context: context::Context,
-    pub stack: alloc::boxed::Box<[u8]>,
+    pub _stack: alloc::boxed::Box<[u8]>,
     pub dead: bool,
 }
 
-pub static mut THREADS: slab::Slab<Thread> = slab::Slab::new();
-pub static mut QUEUE: alloc::collections::VecDeque<usize> = alloc::collections::VecDeque::new();
-pub static mut CURRENT: usize = 0;
+static mut THREADS: slab::Slab<Thread> = slab::Slab::new();
+static mut QUEUE: alloc::collections::VecDeque<usize> = alloc::collections::VecDeque::new();
+static mut CURRENT: Option<usize> = None;
 
 pub fn create_thread(entry: usize, privileged: bool) -> usize {
-    println!("{}", entry);
     let thread_stack = alloc::vec![0 as u8; STACK_SIZE].into_boxed_slice();
     let stack_top = thread_stack.as_ptr() as usize + STACK_SIZE;
 
@@ -33,13 +32,13 @@ pub fn create_thread(entry: usize, privileged: bool) -> usize {
         sstatus.set_spp(riscv::register::sstatus::SPP::User);
     }
 
-    sstatus.set_spie(true);
+    sstatus.set_sie(true);
 
     thread_context.sstatus = sstatus.bits();
 
     let thread = Thread {
         context: thread_context,
-        stack: thread_stack,
+        _stack: thread_stack,
         dead: false,
     };
 
@@ -74,7 +73,7 @@ pub unsafe extern "C" fn wait() {
         "
         wait_start:
             wfi
-            j wait_start
+            j   wait_start
         "
     );
 }
@@ -83,31 +82,41 @@ pub fn schedule(context: &mut thread::context::Context) {
     unsafe {
         let threads = &mut *(&raw mut THREADS);
         let queue = &mut *(&raw mut QUEUE);
-        let current_thread_id = CURRENT;
-        println!("{}: {}", current_thread_id, context.sepc);
-        if queue.is_empty() {
-            // println!("Nothing to run");
-            context.sepc = wait as *const u8 as usize;
-        } else {
+        if let Some(current_thread_id) = CURRENT {
             if let Some(current_thread) = threads.get_mut(current_thread_id) {
+                queue.push_back(current_thread_id);
                 current_thread.context = *context;
-                if current_thread.dead == false {
-                    // println!("Thread halting: {}",current_thread_id);
-                    queue.push_back(current_thread_id);
-                } else {
-                    // println!("Thread exiting: {}",current_thread_id);
-                    threads.remove(current_thread_id);
-                }
             }
-            if let Some(next_thread_id) = queue.pop_front() {
-                if let Some(next_thread) = threads.get_mut(next_thread_id) {
-                    // println!("Thread starting: {}",next_thread_id);
-                    CURRENT = next_thread_id;
-                    *context = next_thread.context;
+        }
+        loop {
+            match queue.pop_front() {
+                Some(new_thread_id) => {
+                    if let Some(new_thread) = threads.get(new_thread_id) {
+                        if new_thread.dead == true {
+                            threads.remove(new_thread_id);
+                            continue;
+                        }
+                    }
+                    if let Some(new_thread) = threads.get(new_thread_id) {
+                        *context = new_thread.context;
+                        CURRENT = Some(new_thread_id);
+                        return;
+                    }
+                }
+                None => {
+                    CURRENT = None;
+                    context.sepc = wait as *const u8 as usize;
+                    let mut sstatus = riscv::register::sstatus::read();
+                    sstatus.set_spie(true);
+                    sstatus.set_spp(riscv::register::sstatus::SPP::Supervisor);
+                    context.sstatus = sstatus.bits();
                     return;
                 }
             }
-            context.sepc = wait as *const u8 as usize;
         }
     }
+}
+
+pub fn get_current_thread() -> Option<usize> {
+    unsafe { CURRENT }
 }
