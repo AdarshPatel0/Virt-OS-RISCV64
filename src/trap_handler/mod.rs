@@ -1,6 +1,6 @@
 pub mod entry;
 
-use crate::{ecall, println, thread, timer_interrupt};
+use crate::{ecall, thread, timer_interrupt};
 
 #[unsafe(no_mangle)]
 extern "C" fn trap_handler(context: &mut thread::context::Context) {

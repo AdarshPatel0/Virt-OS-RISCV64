@@ -40,9 +40,9 @@ extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         drop(heap);
     };
 
-    thread::create_thread(main_thread as *const u8 as usize, false);
+    thread::create_thread(main_thread as *const u8 as usize, true);
 
-    timer_interrupt::set_time_quanta(1_000_000);
+    timer_interrupt::set_time_quanta(10_000_000);
 
     unsafe {
         riscv::register::stvec::write(riscv::register::stvec::Stvec::new(trap_handler::entry::trap_handler_entry as *const u8 as usize, riscv::register::stvec::TrapMode::Direct));
@@ -58,7 +58,16 @@ extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
 }
 
 fn main_thread() -> ! {
-    let character = system_utils::console_utils::get_char();
-    system_utils::console_utils::print_char(character);
+    loop {
+        match sbi::legacy::console_getchar() {
+            Some(character) => {
+                println!("{}", character as char);
+                break;
+            }
+            None => {
+                continue;
+            }
+        }
+    }
     system_utils::shutdown()
 }
