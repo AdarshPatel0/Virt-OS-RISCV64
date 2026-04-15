@@ -25,9 +25,11 @@ extern "C" fn trap_handler(context: &mut thread::context::Context) {
             riscv::interrupt::Exception::StoreMisaligned => todo!(),
             riscv::interrupt::Exception::StoreFault => todo!(),
             riscv::interrupt::Exception::UserEnvCall => {
+                context.sepc = context.sepc + 4;
                 ecall::call(context);
             }
             riscv::interrupt::Exception::SupervisorEnvCall => {
+                context.sepc = context.sepc + 4;
                 ecall::call(context);
             }
             riscv::interrupt::Exception::InstructionPageFault => todo!(),

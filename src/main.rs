@@ -26,23 +26,8 @@ core::arch::global_asm!(
     "#
 );
 
-fn func() {
-    unsafe {
-        core::arch::asm!(
-            "
-            li  a7, 11
-            li  a0,  2
-            ecall
-            li  a7, 0
-            ecall
-            "
-        )
-    }
-    loop {}
-}
-
 #[unsafe(no_mangle)]
-pub extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
+extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
     let device_tree = device_tree_utils::read_device_tree_data(device_tree_binary_ptr).expect("Failed to read device tree.");
 
     let (system_memory_base_address, system_memory_amount) = device_tree_utils::get_system_memory_info(&device_tree).expect("Failed to get system memory amount.");
@@ -55,9 +40,7 @@ pub extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         drop(heap);
     };
 
-    let _thread_a = thread::create_thread(func as *const u8 as usize, false);
-    let _thread_b = thread::create_thread(func as *const u8 as usize, false);
-    let _thread_c = thread::create_thread(func as *const u8 as usize, false);
+    thread::create_thread(main_thread as *const u8 as usize, true);
 
     timer_interrupt::set_time_quanta(1_000_000);
 
@@ -72,4 +55,10 @@ pub extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
     loop {
         riscv::asm::wfi();
     }
+}
+
+fn main_thread() -> ! {
+    let character = system_utils::console_utils::get_char();
+    system_utils::console_utils::print_char(character);
+    loop {}
 }

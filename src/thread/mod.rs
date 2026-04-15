@@ -4,11 +4,13 @@ pub mod context;
 
 extern crate alloc;
 
+#[allow(unused)]
 static STACK_SIZE: usize = 4096;
 
+#[allow(unused)]
 pub struct Thread {
     pub context: context::Context,
-    pub _stack: alloc::boxed::Box<[u8]>,
+    pub stack: alloc::boxed::Box<[u8]>,
     pub dead: bool,
 }
 
@@ -16,6 +18,7 @@ static mut THREADS: slab::Slab<Thread> = slab::Slab::new();
 static mut QUEUE: alloc::collections::VecDeque<usize> = alloc::collections::VecDeque::new();
 static mut CURRENT: Option<usize> = None;
 
+#[allow(unused)]
 pub fn create_thread(entry: usize, privileged: bool) -> usize {
     let thread_stack = alloc::vec![0 as u8; STACK_SIZE].into_boxed_slice();
     let stack_top = thread_stack.as_ptr() as usize + STACK_SIZE;
@@ -38,7 +41,7 @@ pub fn create_thread(entry: usize, privileged: bool) -> usize {
 
     let thread = Thread {
         context: thread_context,
-        _stack: thread_stack,
+        stack: thread_stack,
         dead: false,
     };
 
