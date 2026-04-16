@@ -53,6 +53,7 @@ pub enum Ecall {
     PrintIsize,
 }
 
+#[allow(dead_code)]
 pub fn get_code(call: Ecall) -> usize {
     match call {
         Ecall::Exit => 0,

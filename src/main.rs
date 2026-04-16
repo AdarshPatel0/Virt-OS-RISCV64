@@ -8,6 +8,7 @@ mod system_utils;
 mod thread;
 mod timer_interrupt;
 mod trap_handler;
+mod programs;
 
 unsafe extern "C" {
     static _kernel_end: u8;
@@ -40,9 +41,9 @@ extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         drop(heap);
     };
 
-    thread::create_thread(main_thread as *const u8 as usize, false);
-
     timer_interrupt::set_time_quanta(10_000_000);
+
+    thread::create_thread(programs::shell::shell as *const u8 as usize, true);
 
     unsafe {
         riscv::register::stvec::write(riscv::register::stvec::Stvec::new(trap_handler::entry::trap_handler_entry as *const u8 as usize, riscv::register::stvec::TrapMode::Direct));
@@ -55,8 +56,4 @@ extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
     loop {
         riscv::asm::wfi();
     }
-}
-
-fn main_thread() -> ! {
-    loop {}
 }
