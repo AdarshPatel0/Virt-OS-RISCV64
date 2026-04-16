@@ -58,22 +58,5 @@ extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
 }
 
 fn main_thread() -> ! {
-    loop {
-        let success: usize;
-        let _character: usize;
-
-        unsafe {
-            core::arch::asm!(
-                "li a7, 14",
-                "ecall",
-                out("a0") success,
-                out("a1") _character,
-                clobber_abi("C"),
-            );
-        }
-
-        if success != 0 {
-            // println!("{}", character);
-        }
-    }
+    loop {}
 }
