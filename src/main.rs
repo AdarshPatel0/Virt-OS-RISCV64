@@ -7,7 +7,7 @@ mod device_tree_utils;
 mod ecall;
 mod panic_handler;
 mod programs;
-mod system_utils;
+mod print_macros;
 mod thread;
 mod timer_interrupt;
 mod trap_handler;

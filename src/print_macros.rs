@@ -1,5 +1,4 @@
 use core::fmt::{self, Write};
-
 struct Console;
 
 impl Write for Console {
@@ -19,7 +18,7 @@ pub fn print(args: fmt::Arguments) {
 #[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => {
-        $crate::system_utils::console_utils::print(format_args!($($arg)*));
+        $crate::print_macros::print(format_args!($($arg)*));
     };
 }
 
