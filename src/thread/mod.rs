@@ -35,7 +35,7 @@ pub fn create_thread(entry: usize, privileged: bool) -> usize {
         sstatus.set_spp(riscv::register::sstatus::SPP::User);
     }
 
-    sstatus.set_sie(true);
+    sstatus.set_spie(true);
 
     thread_context.sstatus = sstatus.bits();
 

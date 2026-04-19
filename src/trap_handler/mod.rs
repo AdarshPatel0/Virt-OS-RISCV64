@@ -1,6 +1,6 @@
 pub mod entry;
 
-use crate::{ecall, println, thread, timer_interrupt};
+use crate::{ecall, thread, timer_interrupt};
 
 #[unsafe(no_mangle)]
 extern "C" fn trap_handler(context: &mut thread::context::Context) {
@@ -19,23 +19,16 @@ extern "C" fn trap_handler(context: &mut thread::context::Context) {
             riscv::interrupt::Exception::InstructionMisaligned => todo!(),
             riscv::interrupt::Exception::InstructionFault => todo!(),
             riscv::interrupt::Exception::IllegalInstruction => todo!(),
-            riscv::interrupt::Exception::Breakpoint => todo!(),
+            riscv::interrupt::Exception::Breakpoint => todo!{},
             riscv::interrupt::Exception::LoadMisaligned => todo!(),
             riscv::interrupt::Exception::LoadFault => todo!(),
             riscv::interrupt::Exception::StoreMisaligned => todo!(),
             riscv::interrupt::Exception::StoreFault => todo!(),
             riscv::interrupt::Exception::UserEnvCall => {
-                context.sepc = context.sepc + 4;
                 ecall::call(context);
-                if context.a1 == 1 {
-                    println!("{}, {}", context.a0, context.a1);
-                }
             }
             riscv::interrupt::Exception::SupervisorEnvCall => {
-                println!("supervisor call");
-                context.sepc = context.sepc + 4;
                 ecall::call(context);
-                println!("{}, {}", context.a0, context.a1);
             }
             riscv::interrupt::Exception::InstructionPageFault => todo!(),
             riscv::interrupt::Exception::LoadPageFault => todo!(),

@@ -1,12 +1,49 @@
-use crate::{print, println};
-
 extern crate alloc;
 
 fn get_ascii_char() -> u8 {
+    let mut char: usize;
+    let mut success: usize;
     loop {
-        if let Some(char_byte) = sbi::legacy::console_getchar() {
-            return char_byte;
+        unsafe {
+            core::arch::asm!(
+                "
+                li a7, 12
+                ecall
+                ",
+                out("a0") char,
+                out("a1") success
+            );
         }
+        if success != 0 {
+            return char as u8;
+        }
+    }
+}
+
+fn print_character(character: char) {
+    unsafe {
+        core::arch::asm!(
+            "
+            li a7, 10
+            ecall
+            ",
+            in("a0") character as usize
+        )
+    }
+}
+
+fn print_string(string: &str) {
+    let string_address = string.as_ptr() as usize;
+    let string_length = string.len();
+    unsafe {
+        core::arch::asm!(
+            "
+            li a7, 11
+            ecall
+            ",
+            in("a0") string_address,
+            in("a1") string_length
+        )
     }
 }
 
@@ -23,13 +60,13 @@ fn get_input_string() -> alloc::string::String {
                     b'C' => {
                         if cursor_position < input.chars().count() {
                             cursor_position = cursor_position + 1;
-                            print!("\x1b[C");
+                            print_string("\x1b[C");
                         }
                     }
                     b'D' => {
                         if cursor_position > 0 {
                             cursor_position = cursor_position - 1;
-                            print!("\x1b[D");
+                            print_string("\x1b[D");
                         }
                     }
                     _ => {
@@ -37,19 +74,39 @@ fn get_input_string() -> alloc::string::String {
                     }
                 }
             }
-            127 => {
+            b'\x7f' => {
                 if cursor_position > 0 {
                     cursor_position = cursor_position - 1;
                     input.remove(cursor_position);
+                    print_string("\x1b[D");
+                    let mut characters = input.chars().skip(cursor_position);
+                    let mut i = 1;
+                    while let Some(character) = characters.next() {
+                        print_character(character);
+                        i += 1;
+                    }
+                    print_string(" ");
+                    for _ in 0..i {
+                        print_string("\x1b[D");
+                    }
                 }
             }
-            13 => {
+            b'\r' => {
                 return input;
             }
-            graphic_ascii_character @ 32..=126 => {
+            graphic_ascii_character @ b'\x20'..=b'\x7e' => {
                 input.insert(cursor_position, graphic_ascii_character as char);
                 cursor_position = cursor_position + 1;
-                print!("{}", graphic_ascii_character as char);
+                print_character(graphic_ascii_character as char);
+                let mut characters = input.chars().skip(cursor_position);
+                let mut i = 0;
+                while let Some(character) = characters.next() {
+                    print_character(character);
+                    i += 1;
+                }
+                for _ in 0..i {
+                    print_string("\x1b[D");
+                }
             }
             _ => continue,
         }
@@ -58,7 +115,19 @@ fn get_input_string() -> alloc::string::String {
 
 pub fn shell() -> ! {
     loop {
-        print!("SHELL$ ");
-        println!("{}", get_input_string());
+        print_string("SHELL$ ");
+        let input = get_input_string();
+        print_character('\n');
+        match input.as_str() {
+            "exit" => unsafe {
+                core::arch::asm!(
+                    "
+                    li a7, 0
+                    ecall
+                    "
+                )
+            },
+            _ => {}
+        }
     }
 }

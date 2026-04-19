@@ -1,14 +1,16 @@
 #![no_main]
 #![no_std]
 
+use crate::thread::create_thread;
+
 mod device_tree_utils;
 mod ecall;
 mod panic_handler;
+mod programs;
 mod system_utils;
 mod thread;
 mod timer_interrupt;
 mod trap_handler;
-mod programs;
 
 unsafe extern "C" {
     static _kernel_end: u8;
@@ -43,7 +45,7 @@ extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
 
     timer_interrupt::set_time_quanta(10_000_000);
 
-    thread::create_thread(programs::shell::shell as *const u8 as usize, true);
+    create_thread(programs::shell::shell as *const u8 as usize, false);
 
     unsafe {
         riscv::register::stvec::write(riscv::register::stvec::Stvec::new(trap_handler::entry::trap_handler_entry as *const u8 as usize, riscv::register::stvec::TrapMode::Direct));

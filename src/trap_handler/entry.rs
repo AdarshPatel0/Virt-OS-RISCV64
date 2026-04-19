@@ -58,7 +58,6 @@ pub unsafe extern "C" fn trap_handler_entry() {
         csrw    sepc,     t0
 
         ld      ra,     0*8(sp)
-        ld      sp,     1*8(sp)
         ld      gp,     2*8(sp)
         ld      tp,     3*8(sp)
 
@@ -91,6 +90,10 @@ pub unsafe extern "C" fn trap_handler_entry() {
         ld      s9,     28*8(sp)
         ld      s10,    29*8(sp)
         ld      s11,    30*8(sp)
+
+        ld      sp,     1*8(sp)
+
+        // ebreak
 
         sret
         "#
