@@ -1,7 +1,7 @@
 use sbi::system_reset::*;
 use core::panic::PanicInfo;
 
-use crate::println;
+use crate::print::println;
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {

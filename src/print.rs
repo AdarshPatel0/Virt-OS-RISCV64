@@ -10,30 +10,31 @@ impl Write for Console {
     }
 }
 
-pub fn print(args: fmt::Arguments) {
+pub fn print_args(args: fmt::Arguments) {
     use core::fmt::Write;
     Console.write_fmt(args).unwrap();
 }
 
-#[macro_export]
 macro_rules! print {
     ($($arg:tt)*) => {
-        $crate::print_macros::print(format_args!($($arg)*));
+        $crate::print::print_args(format_args!($($arg)*));
     };
 }
 
-#[macro_export]
 macro_rules! println {
     () => {
         $crate::print!("\n");
     };
     ($fmt:expr) => {
-        $crate::print!(concat!($fmt, "\n"));
+        $crate::print::print!(concat!($fmt, "\n"));
     };
     ($fmt:expr, $($arg:tt)*) => {
-        $crate::print!(
+        $crate::print::print!(
             concat!($fmt, "\n"),
             $($arg)*
         );
     };
 }
+
+pub(crate) use print;
+pub(crate) use println;

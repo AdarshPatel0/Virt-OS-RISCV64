@@ -1,4 +1,5 @@
-use crate::{print, thread};
+use crate::thread;
+use crate::print::print;
 
 pub fn call(context: &mut thread::context::Context) {
     context.sepc = context.sepc + 4;
@@ -11,12 +12,6 @@ pub fn call(context: &mut thread::context::Context) {
         }
         10 => unsafe {
             print!("{}", core::char::from_u32_unchecked(context.a0 as u32));
-        },
-        11 => {
-            print!("{}", context.a0);
-        },
-        12 => {
-            print!("{}", context.a0 as isize);
         },
         20 => unsafe {
             let slice = &*core::ptr::slice_from_raw_parts(context.a0 as *const u8, context.a1);

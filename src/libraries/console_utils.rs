@@ -32,18 +32,6 @@ pub fn print_character(character: char) {
     }
 }
 
-pub fn print_usize(value: usize) {
-    unsafe {
-        core::arch::asm!(
-            "
-            li a7, 11
-            ecall
-            ",
-            in("a0") value
-        )
-    }
-}
-
 pub fn print_string(string: &str) {
     let string_address = string.as_ptr() as usize;
     let string_length = string.len();
@@ -124,3 +112,42 @@ pub fn get_input_string() -> alloc::string::String {
         }
     }
 }
+
+use core::fmt::{self, Write};
+struct Console;
+
+impl Write for Console {
+    fn write_str(&mut self, s: &str) -> fmt::Result {
+        print_string(s);
+        Ok(())
+    }
+}
+
+pub fn print_args(args: fmt::Arguments) {
+    use core::fmt::Write;
+    Console.write_fmt(args).unwrap();
+}
+
+macro_rules! print {
+    ($($arg:tt)*) => {
+        $crate::libraries::console_utils::print_args(format_args!($($arg)*));
+    };
+}
+
+macro_rules! println {
+    () => {
+        $crate::libraries::console_utils::print!("\n");
+    };
+    ($fmt:expr) => {
+        $crate::libraries::console_utils::print!(concat!($fmt, "\n"));
+    };
+    ($fmt:expr, $($arg:tt)*) => {
+        $crate::libraries::console_utils::print!(
+            concat!($fmt, "\n"),
+            $($arg)*
+        );
+    };
+}
+
+pub(crate) use print;
+pub(crate) use println;
