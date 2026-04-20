@@ -1,13 +1,11 @@
 #![no_main]
 #![no_std]
 
-use crate::thread::create_thread;
-
 mod device_tree_utils;
 mod ecall;
 mod panic_handler;
-mod programs;
 mod print_macros;
+mod programs;
 mod thread;
 mod timer_interrupt;
 mod trap_handler;
@@ -18,6 +16,8 @@ unsafe extern "C" {
 
 #[global_allocator]
 pub static HEAP: buddy_system_allocator::LockedHeap<32> = buddy_system_allocator::LockedHeap::<32>::empty();
+
+pub static DEVICE_TREE_PTR: spin::Once<usize> = spin::Once::new();
 
 core::arch::global_asm!(
     r#"
@@ -31,10 +31,12 @@ core::arch::global_asm!(
 
 #[unsafe(no_mangle)]
 extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
-    let device_tree = device_tree_utils::read_device_tree_data(device_tree_binary_ptr).expect("Failed to read device tree.");
+    let _ = *DEVICE_TREE_PTR.call_once(|| device_tree_binary_ptr);
 
-    let (system_memory_base_address, system_memory_amount) = device_tree_utils::get_system_memory_info(&device_tree).expect("Failed to get system memory amount.");
-
+    let device_tree = device_tree_utils::get_device_tree(device_tree_binary_ptr);
+    let device_memory = device_tree.memory().regions().next().expect("Failed to get device memory region");
+    let system_memory_base_address = device_memory.starting_address as usize;
+    let system_memory_amount = device_memory.size.expect("Failed to get memory amount");
     let kernel_end_address = core::ptr::addr_of!(_kernel_end) as usize;
 
     unsafe {
@@ -43,9 +45,9 @@ extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         drop(heap);
     };
 
-    timer_interrupt::set_time_quanta(10_000_000);
+    thread::create_thread(programs::shell::shell as *const u8 as usize, false);
 
-    create_thread(programs::shell::shell as *const u8 as usize, false);
+    timer_interrupt::set_time_quanta(1_000_000);
 
     unsafe {
         riscv::register::stvec::write(riscv::register::stvec::Stvec::new(trap_handler::entry::trap_handler_entry as *const u8 as usize, riscv::register::stvec::TrapMode::Direct));

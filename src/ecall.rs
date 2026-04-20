@@ -1,4 +1,4 @@
-use crate::{print, thread, timer_interrupt};
+use crate::{print, thread};
 
 pub fn call(context: &mut thread::context::Context) {
     context.sepc = context.sepc + 4;
@@ -7,12 +7,7 @@ pub fn call(context: &mut thread::context::Context) {
         0 => {
             if let Some(current_thread) = thread::get_current_thread() {
                 thread::delete_thread(current_thread);
-                thread::schedule(context);
             }
-        }
-        1 => {
-            thread::schedule(context);
-            timer_interrupt::update_timer();
         }
         10 => unsafe {
             print!("{}", core::char::from_u32_unchecked(context.a0 as u32));

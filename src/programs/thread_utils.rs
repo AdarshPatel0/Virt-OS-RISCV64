@@ -1,4 +1,4 @@
-pub fn exit() {
+pub fn exit() -> ! {
     unsafe {
         core::arch::asm!(
             "
@@ -7,15 +7,5 @@ pub fn exit() {
             "
         )
     }
-}
-
-pub fn r#yield() {
-    unsafe {
-        core::arch::asm!(
-            "
-            li a7, 1
-            ecall
-            "
-        )
-    }
+    loop {}
 }
