@@ -10,8 +10,6 @@ extern "C" fn trap_handler(context: &mut thread::context::Context) {
         riscv::interrupt::Trap::Interrupt(interrupt) => match interrupt {
             riscv::interrupt::Interrupt::SupervisorSoft => todo!(),
             riscv::interrupt::Interrupt::SupervisorTimer => {
-                let id = riscv::register::sscratch::read();
-                print!("{}", id);
                 thread::schedule(context);
                 timer_interrupt::update_timer();
             }
