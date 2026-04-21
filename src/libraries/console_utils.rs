@@ -38,7 +38,7 @@ pub fn print_string(string: &str) {
     unsafe {
         core::arch::asm!(
             "
-            li a7, 20
+            li a7, 11
             ecall
             ",
             in("a0") string_address,

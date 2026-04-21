@@ -4,7 +4,6 @@ pub mod context;
 
 extern crate alloc;
 
-#[allow(unused)]
 static STACK_SIZE: usize = 4096;
 
 #[allow(unused)]

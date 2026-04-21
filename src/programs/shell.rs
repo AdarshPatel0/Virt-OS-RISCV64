@@ -24,7 +24,7 @@ pub fn shell() -> ! {
                 while let Some(cpu) = cpus.next() {
                     let cpu_id = cpu.ids().first();
                     let clock_speed = cpu.timebase_frequency();
-                    println!("id: {} @{}", cpu_id, clock_speed);
+                    println!("id: {}\t@{}", cpu_id, clock_speed);
                 }
             }
             _ => {}
