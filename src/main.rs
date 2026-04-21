@@ -1,7 +1,8 @@
 #![no_main]
 #![no_std]
 
-use crate::print::println;
+use crate::print::*;
+extern crate alloc;
 
 mod device_tree_utils;
 mod ecall;
@@ -22,6 +23,8 @@ pub static HEAP: buddy_system_allocator::LockedHeap<32> = buddy_system_allocator
 
 pub static DEVICE_TREE_PTR: spin::Once<usize> = spin::Once::new();
 
+static STACK_SIZE: usize = 4096;
+
 core::arch::global_asm!(
     r#"
     .section .text.entry
@@ -32,24 +35,16 @@ core::arch::global_asm!(
     "#
 );
 
-fn initialize_hart(hart_id: usize) -> ! {
-    println!("Hart: {}", hart_id);
-    timer_interrupt::set_time_quanta(1_000_000);
-
-    unsafe {
-        riscv::register::sscratch::write(hart_id);
-    }
-
-    unsafe {
-        riscv::register::stvec::write(riscv::register::stvec::Stvec::new(trap_handler::entry::trap_handler_entry as *const u8 as usize, riscv::register::stvec::TrapMode::Direct));
-        riscv::interrupt::enable();
-        riscv::interrupt::enable_interrupt(riscv::interrupt::supervisor::Interrupt::SupervisorTimer);
-    }
-
-    timer_interrupt::update_timer();
-    loop {
-        riscv::asm::wfi();
-    }
+#[unsafe(naked)]
+#[unsafe(no_mangle)]
+unsafe extern "C" fn initialize_hart() -> ! {
+    core::arch::naked_asm!(
+        "
+        a:
+        wfi
+        j a
+        "
+    )
 }
 
 #[unsafe(no_mangle)]
@@ -68,12 +63,23 @@ extern "C" fn kmain(_hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         drop(heap);
     };
 
-    thread::create_thread(programs::shell::shell as *const u8 as usize, false);
+    // thread::create_thread(programs::shell::shell as *const u8 as usize, false);
+
+    timer_interrupt::set_time_quanta(1_000_000);
 
     for cpu in device_tree.cpus() {
         let id = cpu.ids().first();
         unsafe {
-            let _ = sbi::hart_state_management::hart_start(id, sbi::PhysicalAddress::new(initialize_hart as *const u8 as usize), 0);
+            let thread_stack = alloc::vec![0 as u8; STACK_SIZE].into_boxed_slice();
+            let stack_top = thread_stack.as_ptr() as usize + STACK_SIZE;
+            match sbi::hart_state_management::hart_start(id, sbi::PhysicalAddress::new(initialize_hart as *const u8 as usize), stack_top) {
+                Ok(_) => {
+                    println!("Ok!");
+                }
+                Err(e) => {
+                    println!("fail");
+                }
+            }
         }
     }
 
