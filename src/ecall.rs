@@ -10,6 +10,9 @@ pub fn call(context: &mut thread::context::Context) {
                 thread::delete_thread(current_thread);
             }
         }
+        2 => {
+            context.a0 = riscv::register::sscratch::read();
+        }
         10 => unsafe {
             print!("{}", core::char::from_u32_unchecked(context.a0 as u32));
         },

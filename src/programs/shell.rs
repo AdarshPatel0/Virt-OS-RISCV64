@@ -27,6 +27,9 @@ pub fn shell() -> ! {
                     println!("id: {}\t@{}", cpu_id, clock_speed);
                 }
             }
+            "id" => {
+                println!("{}", get_hart_id());
+            }
             _ => {}
         }
     }
