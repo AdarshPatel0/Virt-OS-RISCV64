@@ -61,7 +61,7 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         hart::initialize_hart(id);
     }
 
-    hart::hart_startup(hart_id);
+    // hart::hart_startup(hart_id);
 
     loop {
         riscv::asm::wfi();

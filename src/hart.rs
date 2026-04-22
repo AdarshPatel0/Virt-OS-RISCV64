@@ -3,6 +3,7 @@ use riscv::register::sscratch;
 use sbi::PhysicalAddress;
 use sbi::hart_state_management::*;
 
+use crate::print::println;
 use crate::timer_interrupt;
 use crate::trap_handler;
 
@@ -30,7 +31,8 @@ extern "C" fn hart_startup_entry() {
 }
 
 #[unsafe(no_mangle)]
-pub fn hart_startup(hart_id: usize) {
+pub fn hart_startup(hart_id: usize, stack_start: usize, stack_size: usize) {
+    println!("{}, {}, {}", hart_id, stack_start, stack_size);
     unsafe {
         use riscv::{
             interrupt,
