@@ -1,8 +1,6 @@
 #![no_main]
 #![no_std]
 
-use crate::print::println;
-
 extern crate alloc;
 
 mod device_tree_utils;
@@ -18,6 +16,7 @@ mod trap_handler;
 
 unsafe extern "C" {
     static _kernel_end: u8;
+    static _stack_top: u8;
 }
 
 #[global_allocator]
@@ -51,6 +50,23 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         drop(heap);
     };
 
+    #[repr(C)]
+    struct CounterArgs {
+        count: usize,
+        delta: usize
+    }
+
+    let args = &CounterArgs {
+        count: 258,
+        delta: 10_000_000
+    };
+
+    let args_slice = unsafe {
+        core::slice::from_raw_parts_mut(args as *const CounterArgs as *mut u8, core::mem::size_of::<CounterArgs>())
+    };
+
+    thread::create_thread(programs::counter::counter as *const u8 as usize, false, args_slice);
+
     timer_interrupt::set_time_quanta(1_000_000);
 
     for cpu in device_tree.cpus() {
@@ -58,10 +74,10 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         if id == hart_id {
             continue;
         }
-        hart::initialize_hart(id);
+        hart::initialize_hart(id, id == hart_id);
     }
 
-    // hart::hart_startup(hart_id);
+    hart::initialize_hart(hart_id, true);
 
     loop {
         riscv::asm::wfi();

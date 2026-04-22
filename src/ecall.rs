@@ -1,5 +1,5 @@
-use crate::thread;
 use crate::print::print;
+use crate::{thread, timer_interrupt};
 
 pub fn call(context: &mut thread::context::Context) {
     context.sepc = context.sepc + 4;
@@ -8,10 +8,30 @@ pub fn call(context: &mut thread::context::Context) {
         0 => {
             if let Some(current_thread) = thread::get_current_thread() {
                 thread::delete_thread(current_thread);
+                thread::schedule(context);
+                timer_interrupt::update_timer();
             }
         }
+        1 => {
+            thread::schedule(context);
+            timer_interrupt::update_timer();
+        }
         2 => {
-            context.a0 = riscv::register::sscratch::read();
+            context.a0 = thread::create_thread(context.a0, false, &[]);
+        }
+        3 => {
+            let threads = thread::THREADS.lock();
+            if let Some(thread) = threads.get(context.a0) {
+                if thread.dead {
+                    context.a0 = 0;
+                    return;
+                }
+                context.a0 = 1;
+                return;
+            } else {
+                context.a0 = 0;
+                return;
+            }
         }
         10 => unsafe {
             print!("{}", core::char::from_u32_unchecked(context.a0 as u32));

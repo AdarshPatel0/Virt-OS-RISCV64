@@ -1,5 +1,9 @@
 use core::fmt::{self, Write};
+use spin::mutex::Mutex;
+
 struct Console;
+
+static CONSOLE: Mutex<Console> = Mutex::new(Console); 
 
 impl Write for Console {
     fn write_str(&mut self, s: &str) -> fmt::Result {
@@ -12,7 +16,7 @@ impl Write for Console {
 
 pub fn print_args(args: fmt::Arguments) {
     use core::fmt::Write;
-    Console.write_fmt(args).unwrap();
+    CONSOLE.lock().write_fmt(args).unwrap();
 }
 
 macro_rules! print {
