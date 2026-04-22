@@ -50,23 +50,8 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         drop(heap);
     };
 
-    #[repr(C)]
-    struct CounterArgs {
-        count: usize,
-        delta: usize
-    }
-
-    let args = &CounterArgs {
-        count: 258,
-        delta: 10_000_000
-    };
-
-    let args_slice = unsafe {
-        core::slice::from_raw_parts_mut(args as *const CounterArgs as *mut u8, core::mem::size_of::<CounterArgs>())
-    };
-
-    thread::create_thread(programs::counter::counter as *const u8 as usize, false, args_slice);
-
+    thread::create_thread(programs::shell::shell as *const u8 as usize, false, &[]);
+    
     timer_interrupt::set_time_quanta(1_000_000);
 
     for cpu in device_tree.cpus() {

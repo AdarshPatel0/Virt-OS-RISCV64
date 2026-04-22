@@ -17,7 +17,10 @@ pub fn call(context: &mut thread::context::Context) {
             timer_interrupt::update_timer();
         }
         2 => {
-            context.a0 = thread::create_thread(context.a0, false, &[]);
+            let arguments_slice = unsafe {
+                core::slice::from_raw_parts(context.a1 as *const u8, context.a2)
+            };
+            context.a0 = thread::create_thread(context.a0, false, arguments_slice);
         }
         3 => {
             let threads = thread::THREADS.lock();

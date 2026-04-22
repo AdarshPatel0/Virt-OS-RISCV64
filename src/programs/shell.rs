@@ -3,6 +3,8 @@
 use crate::device_tree_utils;
 use crate::libraries::console_utils::*;
 use crate::libraries::thread_utils::*;
+use crate::print::println;
+use crate::programs::*;
 
 pub extern "C" fn shell() -> ! {
     loop {
@@ -29,6 +31,12 @@ pub extern "C" fn shell() -> ! {
                     let clock_speed = cpu.timebase_frequency();
                     println!("id: {}\t@{}", cpu_id, clock_speed);
                 }
+            }
+            "count to 10" => {
+                let args = counter::CounterArgs { n: 10, d: 10_000_000 };
+                let tid = thread_create(counter::new as *const u8 as usize, &args);
+                thread_wait(tid);
+                println!("Complete");
             }
             _ => {}
         }

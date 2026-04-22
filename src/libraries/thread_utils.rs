@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 pub fn thread_exit() -> ! {
     unsafe {
         core::arch::asm!(
@@ -21,7 +23,7 @@ pub fn thread_release() {
     }
 }
 
-pub fn thread_create(entry: usize) -> usize {
+pub fn thread_create<T>(entry: usize, arguments: &T) -> usize {
     let mut tid: usize = 0;
     unsafe {
         core::arch::asm!(
@@ -30,6 +32,8 @@ pub fn thread_create(entry: usize) -> usize {
             ecall
             ",
             in("a0") entry,
+            in("a1") arguments as *const T as usize,
+            in("a2") core::mem::size_of::<T>(),
             lateout("a0") tid
         )
     }

@@ -1,4 +1,4 @@
-use crate::{hart, print::println, thread};
+use crate::{hart, thread};
 
 pub mod context;
 
@@ -17,22 +17,16 @@ pub static THREADS: spin::Mutex<slab::Slab<Thread>> = spin::Mutex::new(slab::Sla
 static QUEUE: spin::Mutex<alloc::collections::VecDeque<usize>> = spin::Mutex::new(alloc::collections::VecDeque::new());
 
 #[allow(unused)]
-pub fn create_thread(entry: usize, privileged: bool, args: &[u8]) -> usize {
-    let thread_stack = alloc::vec![0 as u8; STACK_SIZE].into_boxed_slice();
-    let stack_top = thread_stack.as_ptr() as usize + STACK_SIZE;
+pub fn create_thread(entry: usize, privileged: bool, arguments: &[u8]) -> usize {
+    let mut thread_stack = alloc::vec![0 as u8; STACK_SIZE].into_boxed_slice();
+    let stack_top = thread_stack.as_ptr() as usize + STACK_SIZE - arguments.len();
 
-    let stack_base = stack_top - args.len();
-    let args_slice = unsafe {
-        core::slice::from_raw_parts_mut(stack_base as *mut u8, args.len())
-    };
-
-    println!("{:?}", args);
-
-    args_slice.copy_from_slice(args);
+    let stack_length = thread_stack.len();
+    (*thread_stack)[stack_length - arguments.len()..].copy_from_slice(arguments);
 
     let mut thread_context = context::Context::default();
-    thread_context.sp = stack_base;
-    thread_context.a0 = args_slice.as_ptr() as usize;
+    thread_context.sp = stack_top;
+    thread_context.a0 = stack_top;
     thread_context.sepc = entry;
 
     let mut sstatus = riscv::register::sstatus::read();
