@@ -1,6 +1,8 @@
 #![no_main]
 #![no_std]
 
+use crate::print::println;
+
 extern crate alloc;
 
 mod device_tree_utils;
@@ -13,6 +15,7 @@ mod programs;
 mod thread;
 mod timer_interrupt;
 mod trap_handler;
+mod virtio_hal;
 
 unsafe extern "C" {
     static _kernel_end: u8;
@@ -50,20 +53,32 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         drop(heap);
     };
 
-    thread::create_thread(programs::shell::shell as *const u8 as usize, false, &[]);
-    
-    timer_interrupt::set_time_quanta(1_000_000);
+    // thread::create_thread(programs::shell::shell as *const u8 as usize, false, &[]);
 
-    for cpu in device_tree.cpus() {
-        let id = cpu.ids().first();
-        if id == hart_id {
-            continue;
+    // timer_interrupt::set_time_quanta(1_000_000);
+
+    // for cpu in device_tree.cpus() {
+    //     let id = cpu.ids().first();
+    //     if id == hart_id {
+    //         continue;
+    //     }
+    //     hart::initialize_hart(id, id == hart_id);
+    // }
+
+    // hart::initialize_hart(hart_id, true);
+
+    for node in device_tree.all_nodes() {
+        if let Some(compat) = node.property("compatible") {
+            println!("{}: compatible = {}", node.name, compat.as_str().unwrap());
         }
-        hart::initialize_hart(id, id == hart_id);
     }
 
-    hart::initialize_hart(hart_id, true);
-
+    let device_id_ptr = (0x10008000 + 0x08) as *const u32;
+    let a = unsafe {
+        // Use volatile read to prevent compiler optimizations
+        core::ptr::read_volatile(device_id_ptr)
+    };
+    println!("{}", a);
     loop {
         riscv::asm::wfi();
     }

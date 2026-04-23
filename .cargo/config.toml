@@ -2,7 +2,8 @@
 target = "riscv64gc-unknown-none-elf"
 
 [target.riscv64gc-unknown-none-elf]
-runner = "qemu-system-riscv64 -m 64M -machine virt -smp 4 -nographic -serial mon:stdio -kernel target/riscv64gc-unknown-none-elf/debug/kernel"
+runner = "qemu-system-riscv64 -m 64M -machine virt -smp 4 -nographic -serial mon:stdio -device virtio-serial-device -device virtconsole,chardev=vcon -chardev vc,id=vcon -kernel target/riscv64gc-unknown-none-elf/debug/kernel"
+#runner = "qemu-system-riscv64 -m 64M -machine virt -smp 4 -nographic -serial mon:stdio -kernel target/riscv64gc-unknown-none-elf/debug/kernel"
 rustflags = [
   "-C", "link-arg=-T./linker.ld",
 ]
