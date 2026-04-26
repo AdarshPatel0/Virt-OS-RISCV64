@@ -17,7 +17,7 @@ pub enum ThreadStatus {
     Dead,
 }
 
-pub static THREADS: spin::Mutex<slab::Slab<Thread>> = spin::Mutex::new(slab::Slab::new());
+pub static THREADS: spin::Mutex<slab::Slab<Thread>> = spin::Mutex::new(slab::Slab::new()); 
 static QUEUE: spin::Mutex<alloc::collections::VecDeque<usize>> = spin::Mutex::new(alloc::collections::VecDeque::new());
 
 pub fn create_thread(entry: usize, privileged: bool, stack_size: usize, arguments: &[u8]) -> usize {

@@ -14,6 +14,8 @@ mod programs;
 mod thread;
 mod timer_interrupt;
 mod trap_handler;
+mod virtio_hal;
+mod disk;
 
 unsafe extern "C" {
     static _kernel_end: u8;
@@ -50,6 +52,8 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         heap.init(kernel_end_address, system_memory_amount - (kernel_end_address - system_memory_base_address));
         drop(heap);
     };
+
+    disk::load_disks(device_tree);
 
     thread::create_thread(programs::shell::new as *const u8 as usize, false, 4096, &[]);
 

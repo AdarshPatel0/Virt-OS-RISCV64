@@ -2,7 +2,14 @@
 target = "riscv64gc-unknown-none-elf"
 
 [target.riscv64gc-unknown-none-elf]
-runner = "qemu-system-riscv64 -m 8M -machine virt -smp 4 -nographic -serial mon:stdio -kernel target/riscv64gc-unknown-none-elf/debug/kernel"
+runner = """qemu-system-riscv64 \
+  -m 8M \
+  -machine virt \
+  -smp 4 \
+  -nographic \
+  -drive file=disk.img,format=raw,id=hd0 \
+  -device virtio-blk-device,drive=hd0 \
+  -kernel"""
 rustflags = [
   "-C", "link-arg=-T./linker.ld",
 ]

@@ -13,27 +13,25 @@ pub extern "C" fn new() -> ! {
             "exit" => {
                 thread_exit();
             }
-            "release" => {
-                thread_release();
-            }
             "time" => {
                 let time = riscv::register::time::read();
                 println!("{}", time);
             }
-            "harts" => {
+            "sysinfo" => {
                 let device_tree_binary_ptr = crate::DEVICE_TREE_PTR.get().unwrap();
                 let device_tree = device_tree_utils::get_device_tree(*device_tree_binary_ptr);
-                let mut cpus = device_tree.cpus();
-                while let Some(cpu) = cpus.next() {
-                    let cpu_id = cpu.ids().first();
-                    let clock_speed = cpu.timebase_frequency();
-                    println!("id: {}\t@{}", cpu_id, clock_speed);
+                for node in device_tree.all_nodes() {
+                    print!("{}: ", node.name);
+                    if let Some(compatable) = node.compatible() {
+                        for name in compatable.all() {
+                            print!("{}", name);
+                        }
+                    }
+                    println!();
                 }
             }
             "example" => {
-                let args = ExampleArguments{
-                    count: 400
-                };
+                let args = ExampleArguments { count: 400 };
 
                 let t1 = thread_create::<ExampleArguments>(example as *const u8 as usize, 1024, &args);
                 thread_wait(t1);
@@ -49,7 +47,7 @@ struct ExampleArguments {
 }
 
 fn example(args: &ExampleArguments) -> ! {
-    println!("Counting to {}",args.count);
+    println!("Counting to {}", args.count);
     for _ in 0..args.count {}
     thread_exit();
 }
