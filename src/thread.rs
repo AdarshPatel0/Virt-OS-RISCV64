@@ -1,16 +1,11 @@
-#![allow(unused)]
-
-use core::ptr::NonNull;
-
 use crate::context;
-use crate::print::println;
 use crate::{hart, thread};
 use alloc::alloc::{alloc, dealloc};
 use core::alloc::Layout;
 
 pub struct Thread {
     pub context: context::Context,
-    pub stack_base_address: usize,
+    pub stack_address: usize,
     pub stack_size: usize,
     pub status: ThreadStatus,
 }
@@ -29,9 +24,13 @@ pub fn create_thread(entry: usize, privileged: bool, stack_size: usize, argument
     let mut threads = THREADS.lock();
     let mut queue = QUEUE.lock();
 
-    let stack_base_address = unsafe { alloc(Layout::from_size_align(stack_size, 16).unwrap()) as usize };
+    let stack_address = unsafe { alloc(Layout::from_size_align(stack_size, 16).unwrap()) as usize };
 
-    let stack_top = stack_base_address + stack_size - 16;
+    let stack_top = stack_address + stack_size - arguments.len();
+
+    unsafe {
+        core::ptr::copy(arguments.as_ptr(), stack_top as *mut u8, arguments.len());
+    }
 
     let mut context = context::Context::default();
     context.sp = stack_top;
@@ -52,14 +51,13 @@ pub fn create_thread(entry: usize, privileged: bool, stack_size: usize, argument
 
     let thread = Thread {
         context,
-        stack_base_address,
+        stack_address,
         stack_size,
         status: ThreadStatus::Ready,
     };
 
     let id = threads.insert(thread);
     queue.push_back(id);
-    println!("Created thread: {} @ {}", id, stack_base_address);
     return id;
 }
 
@@ -77,8 +75,7 @@ pub fn cleanup_thread(id: usize) -> bool {
     match threads.get(id) {
         Some(thread) => {
             if thread.status == ThreadStatus::Dead {
-                unsafe { dealloc(thread.stack_base_address as *mut u8, Layout::from_size_align(thread.stack_size, 16).unwrap()) }
-                println!("Cleaned up thread: {} @ {}", id, thread.stack_base_address);
+                unsafe { dealloc(thread.stack_address as *mut u8, Layout::from_size_align(thread.stack_size, 16).unwrap()) }
                 threads.remove(id);
                 return true;
             }

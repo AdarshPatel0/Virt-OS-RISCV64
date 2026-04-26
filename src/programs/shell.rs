@@ -31,16 +31,12 @@ pub extern "C" fn new() -> ! {
                 }
             }
             "example" => {
-                let t1 = thread_create::<()>(example as *const u8 as usize, 1024, &());
-                let t2 = thread_create::<()>(example as *const u8 as usize, 1024, &());
-                let t3 = thread_create::<()>(example as *const u8 as usize, 1024, &());
-                let t4 = thread_create::<()>(example as *const u8 as usize, 1024, &());
+                let args = ExampleArguments{
+                    count: 400
+                };
 
+                let t1 = thread_create::<ExampleArguments>(example as *const u8 as usize, 1024, &args);
                 thread_wait(t1);
-                thread_wait(t2);
-                thread_wait(t3);
-                thread_wait(t4);
-
                 println!("Complete");
             }
             _ => {}
@@ -48,7 +44,12 @@ pub extern "C" fn new() -> ! {
     }
 }
 
-fn example() -> ! {
-    for _ in 0..10_000_000 {}
+struct ExampleArguments {
+    count: usize,
+}
+
+fn example(args: &ExampleArguments) -> ! {
+    println!("Counting to {}",args.count);
+    for _ in 0..args.count {}
     thread_exit();
 }
