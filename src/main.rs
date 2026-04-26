@@ -3,6 +3,7 @@
 
 extern crate alloc;
 
+mod context;
 mod device_tree_utils;
 mod ecall;
 mod hart;
@@ -13,7 +14,6 @@ mod programs;
 mod thread;
 mod timer_interrupt;
 mod trap_handler;
-mod virtio_hal;
 
 unsafe extern "C" {
     static _kernel_end: u8;
@@ -47,11 +47,11 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
 
     unsafe {
         let mut heap = HEAP.lock();
-        heap.add_to_heap(kernel_end_address, system_memory_base_address + system_memory_amount);
+        heap.init(kernel_end_address, system_memory_amount - (kernel_end_address - system_memory_base_address));
         drop(heap);
     };
 
-    thread::create_thread(programs::shell::shell as *const u8 as usize, false, &[]);
+    thread::create_thread(programs::shell::new as *const u8 as usize, false, 4096, &[]);
 
     timer_interrupt::set_time_quanta(1_000_000);
 

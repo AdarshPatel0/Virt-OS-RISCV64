@@ -1,9 +1,9 @@
 pub mod entry;
 
-use crate::{ecall, thread, timer_interrupt};
+use crate::{context, ecall, thread, timer_interrupt};
 
 #[unsafe(no_mangle)]
-extern "C" fn trap_handler(context: &mut thread::context::Context) {
+extern "C" fn trap_handler(context: &mut context::Context) {
     let raw_trap = riscv::register::scause::read().cause();
     let trap: riscv::interrupt::Trap<riscv::interrupt::Interrupt, riscv::interrupt::Exception> = raw_trap.try_into().unwrap();
     match trap {
@@ -19,7 +19,7 @@ extern "C" fn trap_handler(context: &mut thread::context::Context) {
             riscv::interrupt::Exception::InstructionMisaligned => todo!(),
             riscv::interrupt::Exception::InstructionFault => todo!(),
             riscv::interrupt::Exception::IllegalInstruction => todo!(),
-            riscv::interrupt::Exception::Breakpoint => todo! {},
+            riscv::interrupt::Exception::Breakpoint => todo!(),
             riscv::interrupt::Exception::LoadMisaligned => todo!(),
             riscv::interrupt::Exception::LoadFault => todo!(),
             riscv::interrupt::Exception::StoreMisaligned => todo!(),

@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 extern crate alloc;
 
 pub fn get_ascii_char() -> u8 {

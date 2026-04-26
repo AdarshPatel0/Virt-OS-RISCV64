@@ -3,15 +3,13 @@ use crate::trap_handler;
 
 extern crate alloc;
 
-pub const STACK_SIZE: usize = 4096;
+pub const STACK_SIZE: usize = 16384;
 
 #[repr(C)]
 #[derive(Default, Copy, Clone)]
 pub struct HartInfo {
-    pub stack_start_address: usize,
-    pub stack_size: usize,
     pub hart_id: usize,
-    pub current_thread: Option<usize>,
+    pub current_thread_id: Option<usize>,
 }
 
 #[unsafe(naked)]
@@ -37,9 +35,10 @@ extern "C" fn hart_startup(_hart_info: &mut HartInfo) -> ! {
         interrupt::enable();
         interrupt::enable_interrupt(interrupt::Interrupt::SupervisorTimer);
     }
-
     timer_interrupt::update_timer();
-    loop {}
+    loop {
+        riscv::asm::wfi();
+    }
 }
 
 pub fn initialize_hart(hart_id: usize, current_hart: bool) {
@@ -49,19 +48,16 @@ pub fn initialize_hart(hart_id: usize, current_hart: bool) {
     use sbi::hart_state_management::*;
 
     unsafe {
-        let hart_stack = alloc(Layout::from_size_align(STACK_SIZE, 16).unwrap());
+        let hart_stack_ptr = alloc(Layout::from_size_align(STACK_SIZE, 16).unwrap());
 
-        let hart_info_ptr = (hart_stack as usize + STACK_SIZE - size_of::<HartInfo>()) as *mut HartInfo;
+        let hart_stack_top = hart_stack_ptr as usize + STACK_SIZE - size_of::<HartInfo>();
 
-        hart_info_ptr.write(HartInfo {
-            stack_start_address: hart_stack as usize,
-            stack_size: STACK_SIZE,
-            hart_id,
-            current_thread: None,
-        });
+        let hart_info_ptr = hart_stack_top as *mut HartInfo;
+
+        *hart_info_ptr = HartInfo { hart_id, current_thread_id: None };
 
         if !current_hart {
-            hart_start(hart_id, PhysicalAddress::new(hart_startup_entry as *const u8 as usize), hart_info_ptr as usize).unwrap();
+            hart_start(hart_id, PhysicalAddress::new(hart_startup_entry as *const u8 as usize), hart_stack_top as usize as usize).unwrap();
         } else {
             use riscv::interrupt;
             interrupt::enable();
@@ -74,4 +70,9 @@ pub fn initialize_hart(hart_id: usize, current_hart: bool) {
             .unwrap();
         }
     }
+}
+
+pub fn get_hart_info_pointer() -> *mut HartInfo {
+    let hart_info_ptr = riscv::register::sscratch::read();
+    hart_info_ptr as *mut HartInfo
 }

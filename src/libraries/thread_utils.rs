@@ -23,7 +23,7 @@ pub fn thread_release() {
     }
 }
 
-pub fn thread_create<T>(entry: usize, arguments: &T) -> usize {
+pub fn thread_create<T>(entry: usize, stack_size: usize, arguments: &T) -> usize {
     let mut tid: usize = 0;
     unsafe {
         core::arch::asm!(
@@ -32,8 +32,9 @@ pub fn thread_create<T>(entry: usize, arguments: &T) -> usize {
             ecall
             ",
             in("a0") entry,
-            in("a1") arguments as *const T as usize,
-            in("a2") core::mem::size_of::<T>(),
+            in("a1") stack_size,
+            in("a2") arguments as *const T as usize,
+            in("a3") core::mem::size_of::<T>(),
             lateout("a0") tid
         )
     }
@@ -41,22 +42,13 @@ pub fn thread_create<T>(entry: usize, arguments: &T) -> usize {
 }
 
 pub fn thread_wait(thread_id: usize) {
-    loop {
-        let mut thread_exists: usize = 0;
-        unsafe {
-            core::arch::asm!(
-                "
+    unsafe {
+        core::arch::asm!(
+            "
                 li a7, 3
                 ecall
                 ",
-                in("a0") thread_id,
-                lateout("a0") thread_exists
-            )
-        }
-        if thread_exists == 1 {
-            thread_release();
-        } else {
-            break;
-        }
+            in("a0") thread_id,
+        )
     }
 }

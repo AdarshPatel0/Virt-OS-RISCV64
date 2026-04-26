@@ -3,10 +3,8 @@
 use crate::device_tree_utils;
 use crate::libraries::console_utils::*;
 use crate::libraries::thread_utils::*;
-use crate::print::println;
-use crate::programs::*;
 
-pub extern "C" fn shell() -> ! {
+pub extern "C" fn new() -> ! {
     loop {
         print_string("SHELL$ ");
         let input = get_input_string();
@@ -32,13 +30,25 @@ pub extern "C" fn shell() -> ! {
                     println!("id: {}\t@{}", cpu_id, clock_speed);
                 }
             }
-            "count to 10" => {
-                let args = counter::CounterArgs { n: 10, d: 10_000_000 };
-                let tid = thread_create(counter::new as *const u8 as usize, &args);
-                thread_wait(tid);
+            "example" => {
+                let t1 = thread_create::<()>(example as *const u8 as usize, 1024, &());
+                let t2 = thread_create::<()>(example as *const u8 as usize, 1024, &());
+                let t3 = thread_create::<()>(example as *const u8 as usize, 1024, &());
+                let t4 = thread_create::<()>(example as *const u8 as usize, 1024, &());
+
+                thread_wait(t1);
+                thread_wait(t2);
+                thread_wait(t3);
+                thread_wait(t4);
+
                 println!("Complete");
             }
             _ => {}
         }
     }
+}
+
+fn example() -> ! {
+    for _ in 0..10_000_000 {}
+    thread_exit();
 }
