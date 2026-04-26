@@ -10,4 +10,4 @@ slab = { version = "0.4.12", default-features = false }
 buddy_system_allocator = { version = "0.13.0" }
 spin = "0.10.0"
 fdt = "0.1.5"
-virtio-drivers = "0.13.0"
+virtio-drivers = { version = "0.13.0", features = ["alloc"] }
