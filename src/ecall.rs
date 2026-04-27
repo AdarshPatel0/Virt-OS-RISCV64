@@ -1,4 +1,4 @@
-use crate::{context, hart, print::print, thread, timer_interrupt};
+use crate::{context, drivers, hart, print::print, thread, timer_interrupt};
 
 pub fn call(context: &mut context::Context) {
     context.sepc = context.sepc + 4;
@@ -26,7 +26,7 @@ pub fn call(context: &mut context::Context) {
         }
         2 => {
             let arguments = unsafe { core::slice::from_raw_parts(context.a[2] as *const u8, context.a[3]) };
-            let thread_id = thread::create_thread(context.a[0], false,context.a[1], arguments);
+            let thread_id = thread::create_thread(context.a[0], false, context.a[1], arguments);
             context.a[0] = thread_id;
         }
         3 => {
@@ -46,11 +46,18 @@ pub fn call(context: &mut context::Context) {
             print!("{}", string);
         },
         30 => {
-            if let Some(input) = sbi::legacy::console_getchar() {
-                context.a[0] = input as usize;
-                context.a[1] = 1;
-            } else {
-                context.a[1] = 0;
+            if let Some(console) = drivers::CONSOLE.lock().as_mut() {
+                match console.recv(true) {
+                    Ok(input) => {
+                        if let Some(character) = input {
+                            context.a[0] = character as usize;
+                            context.a[1] = 1;
+                        } else {
+                            context.a[1] = 0;
+                        }
+                    }
+                    Err(_) => todo!(),
+                }
             }
         }
         _ => {
