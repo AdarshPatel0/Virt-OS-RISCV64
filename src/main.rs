@@ -1,8 +1,6 @@
 #![no_main]
 #![no_std]
 
-use crate::print::println;
-
 extern crate alloc;
 
 mod context;
@@ -17,7 +15,7 @@ mod thread;
 mod timer_interrupt;
 mod trap_handler;
 mod virtio_hal;
-mod devices;
+mod drivers;
 
 unsafe extern "C" {
     static _kernel_end: u8;
@@ -55,7 +53,7 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         drop(heap);
     };
 
-    devices::load_drivers(device_tree);
+    drivers::load_drivers(device_tree);
 
     thread::create_thread(programs::shell::new as *const u8 as usize, false, 4096, &[]);
 
