@@ -5,6 +5,7 @@ extern crate alloc;
 
 mod context;
 mod device_tree_utils;
+mod drivers;
 mod ecall;
 mod hart;
 mod libraries;
@@ -15,7 +16,6 @@ mod thread;
 mod timer_interrupt;
 mod trap_handler;
 mod virtio_hal;
-mod drivers;
 
 unsafe extern "C" {
     static _kernel_end: u8;
@@ -55,7 +55,7 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
 
     drivers::load_drivers(device_tree);
 
-    thread::create_thread(programs::shell::new as *const u8 as usize, false, 4096, &[]);
+    thread::create_thread(programs::shell::new as *const u8 as usize, false, 16384, &[]);
 
     timer_interrupt::set_time_quanta(1_000_000);
 

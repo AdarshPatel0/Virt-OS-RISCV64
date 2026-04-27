@@ -1,15 +1,18 @@
 use core::ptr::NonNull;
 use fdt::Fdt;
 use spin::Mutex;
-use virtio_drivers::device::blk::VirtIOBlk;
-use virtio_drivers::device::sound::VirtIOSound;
-use virtio_drivers::transport::mmio::{MmioTransport, VirtIOHeader};
-use virtio_drivers::transport::{DeviceType, Transport};
+use virtio_drivers::{
+    device::{blk::VirtIOBlk, console::VirtIOConsole},
+    transport::{
+        DeviceType, Transport,
+        mmio::{MmioTransport, VirtIOHeader},
+    },
+};
 
-use crate::print::println;
 use crate::virtio_hal;
 
-pub static DISKS: spin::Once<slab::Slab<spin::Mutex<VirtIOBlk<virtio_hal::VirtIOHal, MmioTransport<'_>>>>> = spin::Once::new();
+pub static DISK: Mutex<Option<VirtIOBlk<virtio_hal::VirtIOHal, MmioTransport<'static>>>> = Mutex::new(None);
+pub static CONSOLE: Mutex<Option<VirtIOConsole<virtio_hal::VirtIOHal, MmioTransport<'static>>>> = Mutex::new(None);
 
 pub fn load_drivers(device_tree: Fdt) {
     for node in device_tree.find_all_nodes("/soc/virtio_mmio") {
@@ -25,14 +28,17 @@ pub fn load_drivers(device_tree: Fdt) {
                 match device_type {
                     DeviceType::Network => todo!(),
                     DeviceType::Block => {
-                        let disk = VirtIOBlk::<virtio_hal::VirtIOHal, _>::new(transport).unwrap();
-                        DISKS.call_once(|| {
-                            let mut slab: slab::Slab<spin::mutex::Mutex<VirtIOBlk<virtio_hal::VirtIOHal, MmioTransport<'_>>>> = slab::Slab::new();
-                            slab.insert(Mutex::new(disk));
-                            slab
-                        });
+                        let mut disk = DISK.lock();
+                        if disk.is_none() {
+                            *disk = Some(VirtIOBlk::<virtio_hal::VirtIOHal, _>::new(transport).unwrap());
+                        }
                     }
-                    DeviceType::Console => todo!(),
+                    DeviceType::Console => {
+                        let mut console = CONSOLE.lock();
+                        if console.is_none() {
+                            *console = Some(VirtIOConsole::<virtio_hal::VirtIOHal, _>::new(transport).unwrap());
+                        }
+                    }
                     DeviceType::EntropySource => todo!(),
                     DeviceType::MemoryBallooning => todo!(),
                     DeviceType::IoMemory => todo!(),
@@ -52,11 +58,7 @@ pub fn load_drivers(device_tree: Fdt) {
                     DeviceType::Pstore => todo!(),
                     DeviceType::IOMMU => todo!(),
                     DeviceType::Memory => todo!(),
-                    DeviceType::Sound => {
-                        println!("Initializing Sound...");
-                        let sound = VirtIOSound::<virtio_hal::VirtIOHal,MmioTransport<'_>>::new(transport);
-                        println!("Sound Initialized!!");
-                    }
+                    DeviceType::Sound => todo!(),
                 }
             }
             Err(_) => {}
