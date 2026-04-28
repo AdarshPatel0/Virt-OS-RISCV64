@@ -1,5 +1,7 @@
 #![allow(unused)]
 
+use crate::{drivers, libraries::thread_utils::thread_yield};
+
 extern crate alloc;
 
 pub fn get_ascii_char() -> u8 {
@@ -19,33 +21,7 @@ pub fn get_ascii_char() -> u8 {
         if success != 0 {
             return char as u8;
         }
-    }
-}
-
-pub fn print_character(character: char) {
-    unsafe {
-        core::arch::asm!(
-            "
-            li a7, 10
-            ecall
-            ",
-            in("a0") character as usize
-        )
-    }
-}
-
-pub fn print_string(string: &str) {
-    let string_address = string.as_ptr() as usize;
-    let string_length = string.len();
-    unsafe {
-        core::arch::asm!(
-            "
-            li a7, 11
-            ecall
-            ",
-            in("a0") string_address,
-            in("a1") string_length
-        )
+        thread_yield();
     }
 }
 
@@ -62,13 +38,13 @@ pub fn get_input_string() -> alloc::string::String {
                     b'C' => {
                         if cursor_position < input.chars().count() {
                             cursor_position = cursor_position + 1;
-                            print_string("\x1b[C");
+                            print!("\x1b[C");
                         }
                     }
                     b'D' => {
                         if cursor_position > 0 {
                             cursor_position = cursor_position - 1;
-                            print_string("\x1b[D");
+                            print!("\x1b[D");
                         }
                     }
                     _ => {
@@ -80,16 +56,16 @@ pub fn get_input_string() -> alloc::string::String {
                 if cursor_position > 0 {
                     cursor_position = cursor_position - 1;
                     input.remove(cursor_position);
-                    print_string("\x1b[D");
+                    print!("\x1b[D");
                     let mut characters = input.chars().skip(cursor_position);
                     let mut i = 1;
                     while let Some(character) = characters.next() {
-                        print_character(character);
+                        print!("{}", character);
                         i += 1;
                     }
-                    print_string(" ");
+                    print!(" ");
                     for _ in 0..i {
-                        print_string("\x1b[D");
+                        print!("\x1b[D");
                     }
                 }
             }
@@ -99,15 +75,15 @@ pub fn get_input_string() -> alloc::string::String {
             graphic_ascii_character @ b'\x20'..=b'\x7e' => {
                 input.insert(cursor_position, graphic_ascii_character as char);
                 cursor_position = cursor_position + 1;
-                print_character(graphic_ascii_character as char);
+                print!("{}", graphic_ascii_character as char);
                 let mut characters = input.chars().skip(cursor_position);
                 let mut i = 0;
                 while let Some(character) = characters.next() {
-                    print_character(character);
+                    print!("{}", character);
                     i += 1;
                 }
                 for _ in 0..i {
-                    print_string("\x1b[D");
+                    print!("\x1b[D");
                 }
             }
             _ => continue,
@@ -116,18 +92,29 @@ pub fn get_input_string() -> alloc::string::String {
 }
 
 use core::fmt::{self, Write};
-struct Console;
+struct Writer;
 
-impl Write for Console {
-    fn write_str(&mut self, s: &str) -> fmt::Result {
-        print_string(s);
+impl Write for Writer {
+    fn write_str(&mut self, string: &str) -> fmt::Result {
+        let string_address = string.as_ptr() as usize;
+        let string_length = string.len();
+        unsafe {
+            core::arch::asm!(
+                "
+                li a7, 11
+                ecall
+                ",
+                in("a0") string_address,
+                in("a1") string_length
+            )
+        }
         Ok(())
     }
 }
 
 pub fn print_args(args: fmt::Arguments) {
     use core::fmt::Write;
-    Console.write_fmt(args).unwrap();
+    Writer.write_fmt(args).unwrap();
 }
 
 macro_rules! print {

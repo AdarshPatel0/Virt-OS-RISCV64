@@ -14,7 +14,7 @@ pub fn thread_exit() -> ! {
     loop {}
 }
 
-pub fn thread_release() {
+pub fn thread_yield() {
     unsafe {
         core::arch::asm!(
             "
@@ -74,7 +74,7 @@ impl Semaphore {
                 break;
             } else {
                 drop(counter);
-                thread_release();
+                thread_yield();
             }
         }
     }

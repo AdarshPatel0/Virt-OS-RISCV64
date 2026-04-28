@@ -2,7 +2,7 @@
 
 use spin::Mutex;
 
-use crate::block_devices;
+use crate::drivers;
 use crate::device_tree_utils;
 use crate::libraries::console_utils::*;
 use crate::libraries::system_utils::*;
@@ -12,9 +12,9 @@ static SEM: Mutex<usize> = Mutex::new(0);
 
 pub extern "C" fn new() -> ! {
     loop {
-        print_string("SHELL$ ");
+        print!("SHELL$ ");
         let input = get_input_string();
-        print_character('\n');
+        println!();
         match input.as_str() {
             "exit" => {
                 system_shutdown("System shutting down.");
@@ -49,7 +49,7 @@ pub extern "C" fn new() -> ! {
                 thread_wait(t4);
             }
             "read-disk" => {
-                let disks = block_devices::BLOCK_DEVICES.lock();
+                let disks = drivers::BLOCK_DEVICES.lock();
                 if let Some(disk_mutex) = disks.get(0) {
                     let mut disk = disk_mutex.lock();
                     let mut buffer = [0; virtio_drivers::device::blk::SECTOR_SIZE];
@@ -59,7 +59,7 @@ pub extern "C" fn new() -> ! {
                 }
             }
             "write-disk" => {
-                let disks = block_devices::BLOCK_DEVICES.lock();
+                let disks = drivers::BLOCK_DEVICES.lock();
                 if let Some(disk_mutex) = disks.get(0) {
                     let mut disk = disk_mutex.lock();
                     print!("Input: ");

@@ -17,7 +17,7 @@ pub enum ThreadStatus {
     Dead,
 }
 
-pub static THREADS: spin::Mutex<slab::Slab<Thread>> = spin::Mutex::new(slab::Slab::new()); 
+pub static THREADS: spin::Mutex<slab::Slab<Thread>> = spin::Mutex::new(slab::Slab::new());
 static QUEUE: spin::Mutex<alloc::collections::VecDeque<usize>> = spin::Mutex::new(alloc::collections::VecDeque::new());
 
 pub fn create_thread(entry: usize, privileged: bool, stack_size: usize, arguments: &[u8]) -> usize {
@@ -97,7 +97,7 @@ pub unsafe extern "C" fn wait() {
     );
 }
 
-pub fn schedule(context: &mut thread::context::Context) {
+pub fn schedule(context: &mut thread::context::Context, yielding: bool) {
     let mut threads = THREADS.lock();
     let mut queue = QUEUE.lock();
 
@@ -113,26 +113,25 @@ pub fn schedule(context: &mut thread::context::Context) {
         }
     }
 
+    if yielding && queue.len() == 1 || queue.len() == 0 {
+        hart_info.current_thread_id = None;
+        context.sepc = wait as *const u8 as usize;
+        let mut sstatus = riscv::register::sstatus::read();
+        sstatus.set_spie(true);
+        sstatus.set_spp(riscv::register::sstatus::SPP::Supervisor);
+        context.sstatus = sstatus.bits();
+        return;
+    }
+
     loop {
-        match queue.pop_front() {
-            Some(new_thread_id) => {
-                if let Some(new_thread) = threads.get_mut(new_thread_id) {
-                    if new_thread.status != ThreadStatus::Dead {
-                        *context = new_thread.context;
-                        hart_info.current_thread_id = Some(new_thread_id);
-                        new_thread.status = ThreadStatus::Running;
-                        return;
-                    }
+        if let Some(new_thread_id) = queue.pop_front() {
+            if let Some(new_thread) = threads.get_mut(new_thread_id) {
+                if new_thread.status != ThreadStatus::Dead {
+                    *context = new_thread.context;
+                    hart_info.current_thread_id = Some(new_thread_id);
+                    new_thread.status = ThreadStatus::Running;
+                    return;
                 }
-            }
-            None => {
-                hart_info.current_thread_id = None;
-                context.sepc = wait as *const u8 as usize;
-                let mut sstatus = riscv::register::sstatus::read();
-                sstatus.set_spie(true);
-                sstatus.set_spp(riscv::register::sstatus::SPP::Supervisor);
-                context.sstatus = sstatus.bits();
-                return;
             }
         }
     }
