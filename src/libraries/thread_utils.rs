@@ -55,17 +55,20 @@ pub fn thread_wait(thread_id: usize) {
     }
 }
 
-pub struct Semaphore {
-    counter_mutex: Mutex<usize>,
-}
+pub struct Semaphore {}
 
 impl Semaphore {
-    pub fn new(count: usize) -> Semaphore {
-        return Semaphore { counter_mutex: Mutex::new(count) };
+    pub fn set(counter_mutex: &Mutex<usize>, count: usize) {
+        let mut counter = counter_mutex.lock();
+        *counter = count;
     }
-    pub fn wait(&self) {
+    pub fn get(counter_mutex: &Mutex<usize>) -> usize {
+        let counter = counter_mutex.lock();
+        return *counter;
+    }
+    pub fn wait(counter_mutex: &Mutex<usize>) {
         loop {
-            let mut counter = self.counter_mutex.lock();
+            let mut counter = counter_mutex.lock();
             if *counter > 0 {
                 *counter = *counter - 1;
                 break;
@@ -75,8 +78,8 @@ impl Semaphore {
             }
         }
     }
-    pub fn post(&self) {
-        let mut counter = self.counter_mutex.lock();
+    pub fn post(counter_mutex: &Mutex<usize>) {
+        let mut counter = counter_mutex.lock();
         *counter = *counter + 1;
         return;
     }

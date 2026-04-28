@@ -1,10 +1,14 @@
 #![allow(dead_code)]
 
+use spin::Mutex;
+
 use crate::block_devices;
 use crate::device_tree_utils;
 use crate::libraries::console_utils::*;
 use crate::libraries::system_utils::*;
 use crate::libraries::thread_utils::*;
+
+static SEM: Mutex<usize> = Mutex::new(0);
 
 pub extern "C" fn new() -> ! {
     loop {
@@ -33,6 +37,7 @@ pub extern "C" fn new() -> ! {
                 }
             }
             "count4" => {
+                Semaphore::set(&SEM, 2);
                 let args = ExampleArguments { count: 10_000_000 };
                 let t1 = thread_create::<ExampleArguments>(example as *const u8 as usize, 1024, &args);
                 let t2 = thread_create::<ExampleArguments>(example as *const u8 as usize, 1024, &args);
@@ -42,7 +47,6 @@ pub extern "C" fn new() -> ! {
                 thread_wait(t2);
                 thread_wait(t3);
                 thread_wait(t4);
-                println!("Complete");
             }
             "read-disk" => {
                 let disks = block_devices::BLOCK_DEVICES.lock();
@@ -63,7 +67,7 @@ pub extern "C" fn new() -> ! {
                     let message = input.as_bytes();
                     println!();
                     let mut buffer = [0; virtio_drivers::device::blk::SECTOR_SIZE];
-                    for i in 0..buffer.len(){
+                    for i in 0..buffer.len() {
                         if i < message.len() {
                             buffer[i] = message[i];
                         } else {
@@ -83,6 +87,9 @@ struct ExampleArguments {
 }
 
 fn example(args: &ExampleArguments) -> ! {
+    Semaphore::wait(&SEM);
     for _ in 0..args.count {}
+    println!("Complete");
+    Semaphore::post(&SEM);
     thread_exit();
 }
