@@ -1,1 +1,1 @@
-[Open in vscode](vscode://vscode.git/clone?url=https://github.com/AdarshPatel0/Virt-OS-RISCV64)
+[![Dev Containers](https://img.shields.io/badge/devcontainer-ready-blue)](https://code.visualstudio.com/docs/devcontainers/create-dev-container)
