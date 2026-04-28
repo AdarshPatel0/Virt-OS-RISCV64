@@ -1,5 +1,3 @@
-use sbi::system_reset;
-
 use crate::{context, hart, print::print, thread, timer_interrupt};
 
 pub fn call(context: &mut context::Context) {
