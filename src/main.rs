@@ -5,7 +5,7 @@ extern crate alloc;
 
 mod context;
 mod device_tree_utils;
-mod drivers;
+mod block_devices;
 mod ecall;
 mod hart;
 mod libraries;
@@ -53,7 +53,7 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         drop(heap);
     };
 
-    drivers::load_drivers(device_tree);
+    block_devices::load_block_devices(device_tree);
 
     thread::create_thread(programs::shell::new as *const u8 as usize, false, 16384, &[]);
 

@@ -1,4 +1,4 @@
-use crate::{context, drivers, hart, print::print, thread, timer_interrupt};
+use crate::{context, hart, print::print, thread, timer_interrupt};
 
 pub fn call(context: &mut context::Context) {
     context.sepc = context.sepc + 4;
@@ -46,18 +46,11 @@ pub fn call(context: &mut context::Context) {
             print!("{}", string);
         },
         30 => {
-            if let Some(console) = drivers::CONSOLE.lock().as_mut() {
-                match console.recv(true) {
-                    Ok(input) => {
-                        if let Some(character) = input {
-                            context.a[0] = character as usize;
-                            context.a[1] = 1;
-                        } else {
-                            context.a[1] = 0;
-                        }
-                    }
-                    Err(_) => todo!(),
-                }
+            if let Some(character) = sbi::legacy::console_getchar() {
+                context.a[0] = character as usize;
+                context.a[1] = 1;
+            } else {
+                context.a[1] = 0;
             }
         }
         _ => {
