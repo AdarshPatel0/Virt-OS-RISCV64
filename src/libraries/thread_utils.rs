@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+use spin::Mutex;
+
 pub fn thread_exit() -> ! {
     unsafe {
         core::arch::asm!(
@@ -50,5 +52,32 @@ pub fn thread_wait(thread_id: usize) {
                 ",
             in("a0") thread_id,
         )
+    }
+}
+
+pub struct Semaphore {
+    counter_mutex: Mutex<usize>,
+}
+
+impl Semaphore {
+    fn new(count: usize) -> Semaphore {
+        return Semaphore { counter_mutex: Mutex::new(count) };
+    }
+    fn wait(&self) {
+        loop {
+            let mut counter = self.counter_mutex.lock();
+            if *counter > 0 {
+                *counter = *counter - 1;
+                break;
+            } else {
+                drop(counter);
+                thread_release();
+            }
+        }
+    }
+    fn post(&self) {
+        let mut counter = self.counter_mutex.lock();
+        *counter = *counter + 1;
+        return;
     }
 }
