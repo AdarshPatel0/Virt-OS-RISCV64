@@ -3,7 +3,7 @@ use core::ptr::NonNull;
 use fdt::Fdt;
 use spin::Mutex;
 use virtio_drivers::{
-    device::blk::VirtIOBlk,
+    device::{blk::VirtIOBlk, console::VirtIOConsole},
     transport::{
         DeviceType, Transport,
         mmio::{MmioTransport, VirtIOHeader},
@@ -29,7 +29,9 @@ pub fn load_drivers(device_tree: Fdt) {
                     let block_device = VirtIOBlk::<virtio_hal::VirtIOHal, _>::new(transport).unwrap();
                     block_devices.push(Mutex::new(block_device));
                 }
-                DeviceType::Console => {}
+                DeviceType::Console => {
+                    // let mut console = VirtIOConsole::<VirtIOHal, _>::new(transport).unwrap();
+                }
                 _ => {}
             }
         }
