@@ -19,7 +19,7 @@
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
-	"postCreateCommand": "sudo apt-get update && sudo apt-get install -y rustup qemu-system-riscv64 && rustup default stable && rustup target add riscv64gc-unknown-none-elf && git clone https://github.com/AdarshPatel0/Virt-OS-RISCV64.git",
+	"postCreateCommand": "sudo apt-get update && sudo apt-get install -y rustup qemu-system-riscv64 && rustup default stable && rustup target add riscv64gc-unknown-none-elf",
 	"customizations": {
 		"vscode": {
 			"extensions": [
