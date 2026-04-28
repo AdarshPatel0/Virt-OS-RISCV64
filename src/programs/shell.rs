@@ -2,6 +2,7 @@
 
 use crate::device_tree_utils;
 use crate::libraries::console_utils::*;
+use crate::libraries::system_utils::*;
 use crate::libraries::thread_utils::*;
 
 pub extern "C" fn new() -> ! {
@@ -11,7 +12,7 @@ pub extern "C" fn new() -> ! {
         print_character('\n');
         match input.as_str() {
             "exit" => {
-                thread_exit();
+                system_shutdown("System shutting down.");
             }
             "time" => {
                 let time = riscv::register::time::read();
@@ -30,11 +31,16 @@ pub extern "C" fn new() -> ! {
                     println!();
                 }
             }
-            "example" => {
-                let args = ExampleArguments { count: 400 };
-
+            "count4" => {
+                let args = ExampleArguments { count: 10_000_000 };
                 let t1 = thread_create::<ExampleArguments>(example as *const u8 as usize, 1024, &args);
+                let t2 = thread_create::<ExampleArguments>(example as *const u8 as usize, 1024, &args);
+                let t3 = thread_create::<ExampleArguments>(example as *const u8 as usize, 1024, &args);
+                let t4 = thread_create::<ExampleArguments>(example as *const u8 as usize, 1024, &args);
                 thread_wait(t1);
+                thread_wait(t2);
+                thread_wait(t3);
+                thread_wait(t4);
                 println!("Complete");
             }
             _ => {}
@@ -47,7 +53,6 @@ struct ExampleArguments {
 }
 
 fn example(args: &ExampleArguments) -> ! {
-    println!("Counting to {}", args.count);
     for _ in 0..args.count {}
     thread_exit();
 }

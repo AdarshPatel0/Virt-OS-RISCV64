@@ -1,3 +1,5 @@
+use sbi::system_reset;
+
 use crate::{context, hart, print::print, thread, timer_interrupt};
 
 pub fn call(context: &mut context::Context) {
@@ -36,6 +38,10 @@ pub fn call(context: &mut context::Context) {
                 thread::schedule(context);
                 timer_interrupt::update_timer();
             }
+        }
+        9 => {
+            use sbi::system_reset::*;
+            let _ =system_reset(ResetType::Shutdown, ResetReason::NoReason);
         }
         10 => unsafe {
             print!("{}", core::char::from_u32_unchecked(context.a[0] as u32));
