@@ -1,5 +1,6 @@
 #![allow(dead_code)]
 
+use crate::block_devices;
 use crate::device_tree_utils;
 use crate::libraries::console_utils::*;
 use crate::libraries::system_utils::*;
@@ -42,6 +43,35 @@ pub extern "C" fn new() -> ! {
                 thread_wait(t3);
                 thread_wait(t4);
                 println!("Complete");
+            }
+            "read-disk" => {
+                let disks = block_devices::BLOCK_DEVICES.lock();
+                if let Some(disk_mutex) = disks.get(0) {
+                    let mut disk = disk_mutex.lock();
+                    let mut buffer = [0; virtio_drivers::device::blk::SECTOR_SIZE];
+                    disk.read_blocks(0, &mut buffer).unwrap();
+                    let message = core::str::from_utf8(&buffer).unwrap();
+                    println!("{}", message);
+                }
+            }
+            "write-disk" => {
+                let disks = block_devices::BLOCK_DEVICES.lock();
+                if let Some(disk_mutex) = disks.get(0) {
+                    let mut disk = disk_mutex.lock();
+                    print!("Input: ");
+                    let input = get_input_string();
+                    let message = input.as_bytes();
+                    println!();
+                    let mut buffer = [0; virtio_drivers::device::blk::SECTOR_SIZE];
+                    for i in 0..buffer.len(){
+                        if i < message.len() {
+                            buffer[i] = message[i];
+                        } else {
+                            break;
+                        }
+                    }
+                    disk.write_blocks(0, &buffer).unwrap();
+                }
             }
             _ => {}
         }
