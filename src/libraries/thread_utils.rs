@@ -60,10 +60,10 @@ pub struct Semaphore {
 }
 
 impl Semaphore {
-    fn new(count: usize) -> Semaphore {
+    pub fn new(count: usize) -> Semaphore {
         return Semaphore { counter_mutex: Mutex::new(count) };
     }
-    fn wait(&self) {
+    pub fn wait(&self) {
         loop {
             let mut counter = self.counter_mutex.lock();
             if *counter > 0 {
@@ -75,7 +75,7 @@ impl Semaphore {
             }
         }
     }
-    fn post(&self) {
+    pub fn post(&self) {
         let mut counter = self.counter_mutex.lock();
         *counter = *counter + 1;
         return;
