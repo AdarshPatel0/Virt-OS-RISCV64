@@ -14,6 +14,7 @@ pub fn get_ascii_char() -> u8 {
             }
         }
     }
+    return 0;
 }
 
 pub fn get_input_string() -> alloc::string::String {
@@ -90,7 +91,6 @@ impl Write for Writer {
         if let Some(console) = &mut *drivers::CONSOLE.lock() {
             console.send_bytes(string.as_bytes());
         }
-
         Ok(())
     }
 }

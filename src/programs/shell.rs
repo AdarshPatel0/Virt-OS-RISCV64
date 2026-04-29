@@ -35,13 +35,13 @@ pub extern "C" fn new() -> ! {
                     println!();
                 }
             }
-            "count4" => {
+            "example" => {
                 Semaphore::set(&SEM, 2);
                 let args = ExampleArguments { count: 10_000_000 };
-                let t1 = thread_create::<ExampleArguments>(example as *const u8 as usize, 1024, &args);
-                let t2 = thread_create::<ExampleArguments>(example as *const u8 as usize, 1024, &args);
-                let t3 = thread_create::<ExampleArguments>(example as *const u8 as usize, 1024, &args);
-                let t4 = thread_create::<ExampleArguments>(example as *const u8 as usize, 1024, &args);
+                let t1 = thread_create::<ExampleArguments>(example as *const u8 as usize, 4096, &args);
+                let t2 = thread_create::<ExampleArguments>(example as *const u8 as usize, 4096, &args);
+                let t3 = thread_create::<ExampleArguments>(example as *const u8 as usize, 4096, &args);
+                let t4 = thread_create::<ExampleArguments>(example as *const u8 as usize, 4096, &args);
                 thread_wait(t1);
                 thread_wait(t2);
                 thread_wait(t3);
@@ -58,6 +58,7 @@ struct ExampleArguments {
 
 fn example(args: &ExampleArguments) -> ! {
     Semaphore::wait(&SEM);
+    println!("Starting");
     for _ in 0..args.count {}
     println!("Complete");
     Semaphore::post(&SEM);

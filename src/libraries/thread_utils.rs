@@ -68,12 +68,11 @@ impl Semaphore {
     }
     pub fn wait(counter_mutex: &Mutex<usize>) {
         loop {
-            let mut counter = counter_mutex.lock();
+            let counter = &mut *counter_mutex.lock();
             if *counter > 0 {
                 *counter = *counter - 1;
                 break;
             } else {
-                drop(counter);
                 thread_yield();
             }
         }
