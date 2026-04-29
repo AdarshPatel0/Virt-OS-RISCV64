@@ -1,0 +1,15 @@
+{
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "attach",
+            "name": "Attach to QEMU",
+            "targetCreateCommands": [
+                "target create ${workspaceRoot}/target/riscv64gc-unknown-none-elf/debug/Virt-OS-RISCV64"
+            ],
+            "processCreateCommands": [
+                "gdb-remote localhost:1234"
+            ]
+        }
+    ]
+}
