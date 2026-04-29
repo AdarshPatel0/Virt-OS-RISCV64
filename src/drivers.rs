@@ -32,6 +32,12 @@ pub fn load_drivers(device_tree: Fdt) {
                     println!("Block device loaded.");
                 }
                 DeviceType::Console => {
+                    for property in node.properties() {
+                        if property.name == "interrupts" {
+                            let value = u32::from_be(unsafe {*(property.value.as_ptr() as *const u32)});
+                            println!("{}", value);
+                        }
+                    }
                     let console = VirtIOConsole::<VirtIOHal, MmioTransport<'_>>::new(transport).unwrap();
                     let mut console_mutex = CONSOLE.lock();
                     *console_mutex = Some(console);
@@ -47,7 +53,6 @@ pub fn get_plic(device_tree: Fdt) {
     for node in device_tree.find_all_nodes("/soc/plic") {
         let reg = node.reg().unwrap().next().unwrap();
         let plic_reg = unsafe { &*((reg.starting_address as usize) as *const PLICRegs) };
-        let plic = unsafe {Plic::new(NonNull::from_ref(plic_reg))};
-        
+        let plic = unsafe { Plic::new(NonNull::from_ref(plic_reg)) };
     }
 }
