@@ -5,23 +5,14 @@ use crate::{drivers, libraries::thread_utils::thread_yield};
 extern crate alloc;
 
 pub fn get_ascii_char() -> u8 {
-    let mut char: usize;
-    let mut success: usize;
     loop {
-        unsafe {
-            core::arch::asm!(
-                "
-                li a7, 30
-                ecall
-                ",
-                out("a0") char,
-                out("a1") success
-            );
+        if let Some(console) = &mut *drivers::CONSOLE.lock() {
+            if let Ok(result) = console.recv(true) {
+                if let Some(input) = result {
+                    return input;
+                }
+            }
         }
-        if success != 0 {
-            return char as u8;
-        }
-        thread_yield();
     }
 }
 
@@ -96,18 +87,10 @@ struct Writer;
 
 impl Write for Writer {
     fn write_str(&mut self, string: &str) -> fmt::Result {
-        let string_address = string.as_ptr() as usize;
-        let string_length = string.len();
-        unsafe {
-            core::arch::asm!(
-                "
-                li a7, 11
-                ecall
-                ",
-                in("a0") string_address,
-                in("a1") string_length
-            )
+        if let Some(console) = &mut *drivers::CONSOLE.lock() {
+            console.send_bytes(string.as_bytes());
         }
+
         Ok(())
     }
 }

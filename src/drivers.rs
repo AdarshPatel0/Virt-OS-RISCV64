@@ -1,4 +1,3 @@
-use alloc::vec::Vec;
 use core::ptr::NonNull;
 use fdt::Fdt;
 use spin::Mutex;
@@ -10,9 +9,10 @@ use virtio_drivers::{
     },
 };
 
-use crate::virtio_hal::{self, VirtIOHal};
+use crate::virtio_hal::VirtIOHal;
 
-pub static BLOCK_DEVICES: Mutex<Vec<Mutex<VirtIOBlk<VirtIOHal, MmioTransport<'static>>>>> = Mutex::new(Vec::new());
+pub static DISK: Mutex<Option<VirtIOBlk<VirtIOHal,MmioTransport>>> = Mutex::new(None);
+pub static CONSOLE: Mutex<Option<VirtIOConsole<VirtIOHal,MmioTransport>>> = Mutex::new(None);
 
 pub fn load_drivers(device_tree: Fdt) {
     for node in device_tree.find_all_nodes("/soc/virtio_mmio") {
@@ -25,12 +25,14 @@ pub fn load_drivers(device_tree: Fdt) {
         if let Ok(transport) = unsafe { MmioTransport::new(header, mmio_size) } {
             match transport.device_type() {
                 DeviceType::Block => {
-                    let mut block_devices = BLOCK_DEVICES.lock();
-                    let block_device = VirtIOBlk::<virtio_hal::VirtIOHal, _>::new(transport).unwrap();
-                    block_devices.push(Mutex::new(block_device));
+                    let disk = VirtIOBlk::<VirtIOHal,MmioTransport<'_>>::new(transport).unwrap();
+                    let mut disk_mutex = DISK.lock();
+                    *disk_mutex = Some(disk);
                 }
                 DeviceType::Console => {
-                    // let mut console = VirtIOConsole::<VirtIOHal, _>::new(transport).unwrap();
+                    let console = VirtIOConsole::<VirtIOHal,MmioTransport<'_>>::new(transport).unwrap();
+                    let mut console_mutex = CONSOLE.lock();
+                    *console_mutex = Some(console);
                 }
                 _ => {}
             }

@@ -97,7 +97,7 @@ pub unsafe extern "C" fn wait() {
     );
 }
 
-pub fn schedule(context: &mut thread::context::Context, yielding: bool) {
+pub fn schedule(context: &mut thread::context::Context) {
     let mut threads = THREADS.lock();
     let mut queue = QUEUE.lock();
 
@@ -113,16 +113,6 @@ pub fn schedule(context: &mut thread::context::Context, yielding: bool) {
         }
     }
 
-    if yielding && queue.len() == 1 || queue.len() == 0 {
-        hart_info.current_thread_id = None;
-        context.sepc = wait as *const u8 as usize;
-        let mut sstatus = riscv::register::sstatus::read();
-        sstatus.set_spie(true);
-        sstatus.set_spp(riscv::register::sstatus::SPP::Supervisor);
-        context.sstatus = sstatus.bits();
-        return;
-    }
-
     loop {
         if let Some(new_thread_id) = queue.pop_front() {
             if let Some(new_thread) = threads.get_mut(new_thread_id) {
@@ -133,6 +123,14 @@ pub fn schedule(context: &mut thread::context::Context, yielding: bool) {
                     return;
                 }
             }
+        } else {
+            hart_info.current_thread_id = None;
+            context.sepc = wait as *const u8 as usize;
+            let mut sstatus = riscv::register::sstatus::read();
+            sstatus.set_spie(true);
+            sstatus.set_spp(riscv::register::sstatus::SPP::Supervisor);
+            context.sstatus = sstatus.bits();
+            return;
         }
     }
 }

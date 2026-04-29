@@ -21,7 +21,7 @@ pub fn call(context: &mut context::Context) {
             }
         }
         1 => {
-            thread::schedule(context,true);
+            thread::schedule(context);
             timer_interrupt::update_timer();
         }
         2 => {
@@ -33,7 +33,7 @@ pub fn call(context: &mut context::Context) {
             let success = thread::cleanup_thread(context.a[0]);
             if !success {
                 context.sepc = context.sepc - 4;
-                thread::schedule(context,false);
+                thread::schedule(context);
                 timer_interrupt::update_timer();
             }
         }
