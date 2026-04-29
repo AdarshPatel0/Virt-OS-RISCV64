@@ -73,7 +73,6 @@ impl Semaphore {
                 *counter = *counter - 1;
                 break;
             } else {
-                drop(counter);
                 thread_yield();
             }
         }
