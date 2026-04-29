@@ -11,4 +11,3 @@ buddy_system_allocator = { version = "0.13.0" }
 spin = "0.10.0"
 fdt = "0.1.5"
 virtio-drivers = { version = "0.13.0", features = ["alloc"] }
-lazy_static = {version = "1.5.0", features = ["spin_no_std"]}
