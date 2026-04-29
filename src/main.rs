@@ -54,6 +54,7 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
     };
 
     drivers::load_drivers(device_tree);
+    drivers::get_plic(device_tree);
 
     thread::create_thread(programs::shell::new as *const u8 as usize, false, 16384, &[]);
 

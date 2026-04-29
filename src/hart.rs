@@ -34,6 +34,7 @@ extern "C" fn hart_startup(_hart_info: &mut HartInfo) -> ! {
         register::stvec::write(riscv::register::stvec::Stvec::new(trap_handler::entry::trap_handler_entry as *const u8 as usize, stvec::TrapMode::Direct));
         interrupt::enable();
         interrupt::enable_interrupt(interrupt::Interrupt::SupervisorTimer);
+        interrupt::enable_interrupt(interrupt::Interrupt::SupervisorExternal);
     }
     timer_interrupt::update_timer();
     loop {
