@@ -12,6 +12,8 @@ runner = """qemu-system-riscv64 \
   -serial chardev:con0 \
   -device virtio-serial-device \
   -device virtconsole,chardev=con0 \
+  -drive file=disk.img,format=raw,id=hd0 \
+  -device virtio-blk-device,drive=hd0 \
   -s \
   -kernel"""
 rustflags = [

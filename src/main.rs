@@ -54,7 +54,7 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
     };
 
     drivers::load_drivers(device_tree);
-    
+
     thread::create_thread(programs::shell::new as *const u8 as usize, false, 16384, &[]);
 
     timer_interrupt::set_time_quanta(1_000_000);
