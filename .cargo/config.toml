@@ -12,7 +12,7 @@ runner = """qemu-system-riscv64 \
   -serial chardev:con0 \
   -device virtio-serial-device \
   -device virtconsole,chardev=con0 \
-  -s -S \
+  -s \
   -kernel"""
 rustflags = [
   "-C", "link-arg=-T./linker.ld",

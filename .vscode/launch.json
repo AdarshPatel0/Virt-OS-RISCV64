@@ -3,13 +3,13 @@
     {
         "type": "lldb",
         "request": "launch",
-        "name": "Custom launch",
+        "name": "Attach",
         "targetCreateCommands": [
             "target create ${workspaceFolder}/target/riscv64gc-unknown-none-elf/debug/Virt-OS-RISCV64"
         ],
         "processCreateCommands": [
             "gdb-remote localhost:1234",
-        ]
+        ],
     }
     ]
 }
