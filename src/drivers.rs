@@ -28,6 +28,9 @@ pub fn load_drivers(device_tree: Fdt) {
         if let Ok(transport) = unsafe { MmioTransport::new(header, mmio_size) } {
             match transport.device_type() {
                 DeviceType::Block => {
+                    if let Some(property) = node.property("interrupt-parent") {
+                        println!("{}", unsafe { u32::from_be(*(property.value.as_ptr() as *const u32)) });
+                    }
                     insert_block_device(transport);
                 }
                 DeviceType::Console => {
