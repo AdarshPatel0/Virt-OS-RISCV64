@@ -1,6 +1,5 @@
 use core::ptr::NonNull;
 use fdt::Fdt;
-use riscv_plic::{PLICRegs, Plic};
 use slab::Slab;
 use spin::Mutex;
 use virtio_drivers::{
@@ -11,11 +10,10 @@ use virtio_drivers::{
     },
 };
 
-use crate::{print::println, virtio_hal::VirtIOHal};
+use crate::virtio_hal::VirtIOHal;
 
 pub static CONSOLE: Mutex<Option<VirtIOConsole<VirtIOHal, MmioTransport>>> = Mutex::new(None);
 pub static BLOCK_DEVICES: Mutex<Slab<Mutex<VirtIOBlk<VirtIOHal, MmioTransport>>>> = Mutex::new(Slab::new());
-pub static PLIC: Mutex<Plic> = unsafe { Mutex::new(Plic::new(NonNull::dangling())) };
 
 pub fn load_drivers(device_tree: Fdt) {
     for node in device_tree.find_all_nodes("/soc/virtio_mmio") {
@@ -28,9 +26,6 @@ pub fn load_drivers(device_tree: Fdt) {
         if let Ok(transport) = unsafe { MmioTransport::new(header, mmio_size) } {
             match transport.device_type() {
                 DeviceType::Block => {
-                    if let Some(property) = node.property("interrupt-parent") {
-                        println!("{}", unsafe { u32::from_be(*(property.value.as_ptr() as *const u32)) });
-                    }
                     insert_block_device(transport);
                 }
                 DeviceType::Console => {
@@ -38,18 +33,6 @@ pub fn load_drivers(device_tree: Fdt) {
                     *CONSOLE.lock() = Some(console);
                 }
                 _ => {}
-            }
-        }
-    }
-}
-
-pub fn load_plic(device_tree: Fdt) {
-    for node in device_tree.find_all_nodes("/soc/plic") {
-        if let Some(mut registers) = node.reg() {
-            if let Some(register) = registers.next() {
-                let plic_ptr = NonNull::new(register.starting_address as *mut PLICRegs).unwrap();
-                let plic = unsafe { Plic::new(plic_ptr) };
-                *PLIC.lock() = plic;
             }
         }
     }
