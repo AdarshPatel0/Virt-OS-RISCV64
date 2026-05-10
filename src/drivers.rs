@@ -10,10 +10,9 @@ use virtio_drivers::{
     },
 };
 
-use crate::virtio_hal::VirtIOHal;
+use crate::{virtio_block_wrapper::VirtioBlockWrapper, virtio_hal::VirtIOHal};
 
 pub static CONSOLE: Mutex<Option<VirtIOConsole<VirtIOHal, MmioTransport>>> = Mutex::new(None);
-pub static BLOCK_DEVICES: Mutex<Slab<Mutex<VirtIOBlk<VirtIOHal, MmioTransport>>>> = Mutex::new(Slab::new());
 
 pub fn load_drivers(device_tree: Fdt) {
     for node in device_tree.find_all_nodes("/soc/virtio_mmio") {
@@ -40,5 +39,15 @@ pub fn load_drivers(device_tree: Fdt) {
 
 fn insert_block_device(transport: MmioTransport<'static>) {
     let block_device = VirtIOBlk::<VirtIOHal, MmioTransport<'_>>::new(transport).unwrap();
-    BLOCK_DEVICES.lock().insert(Mutex::new(block_device));
+    
+    let mut journaling_device = rsext4::blockdev::Jbd2Dev::initial_jbd2dev(0, VirtioBlockWrapper::new(block_device), true);
+
+    match rsext4::ext4::Ext4FileSystem::mount(&mut journaling_device) {
+        Ok(filesystem) => {
+
+        },
+        Err(error) => {
+            crate::print::println!("{}", error);
+        },
+    }
 }

@@ -2,13 +2,28 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"type": "cargo",
-			"command": "run",
+			"label": "Run QEMU",
+			"type": "shell",
+			"command": "cargo run",
 			"isBackground": true,
-			"problemMatcher": [
-				"$rustc"
-			],
-			"label": "Run QEMU"
+			"problemMatcher": {
+                "pattern": { "regexp": "." },
+                "background": {
+                    "activeOnStart": true,
+                    "beginsPattern": ".",
+                    "endsPattern": "."
+                }
+            }
+		},
+		{
+			"label": "Build Kernel",
+			"type": "shell",
+			"command": "cargo build",
+		},
+		{
+			"label": "Build Kernel and Run QEMU",
+			"dependsOn": ["Build Kernel", "Run QEMU"],
+			"dependsOrder": "sequence"
 		}
 	]
 }

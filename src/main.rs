@@ -15,6 +15,7 @@ mod programs;
 mod thread;
 mod timer_interrupt;
 mod trap_handler;
+mod virtio_block_wrapper;
 mod virtio_hal;
 
 unsafe extern "C" {
