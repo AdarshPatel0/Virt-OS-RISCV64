@@ -1,7 +1,6 @@
 use core::ptr::NonNull;
 use fdt::Fdt;
-use slab::Slab;
-use spin::Mutex;
+use spin::{Mutex};
 use virtio_drivers::{
     device::{blk::VirtIOBlk, console::VirtIOConsole},
     transport::{
@@ -10,9 +9,10 @@ use virtio_drivers::{
     },
 };
 
-use crate::{virtio_block_wrapper::VirtioBlockWrapper, virtio_hal::VirtIOHal};
+use crate::virtio_hal::VirtIOHal;
 
 pub static CONSOLE: Mutex<Option<VirtIOConsole<VirtIOHal, MmioTransport>>> = Mutex::new(None);
+pub static BLOCK_DEVICES: Mutex<slab::Slab<Mutex<VirtIOBlk<VirtIOHal, MmioTransport>>>> = Mutex::new(slab::Slab::new());
 
 pub fn load_drivers(device_tree: Fdt) {
     for node in device_tree.find_all_nodes("/soc/virtio_mmio") {
@@ -25,29 +25,24 @@ pub fn load_drivers(device_tree: Fdt) {
         if let Ok(transport) = unsafe { MmioTransport::new(header, mmio_size) } {
             match transport.device_type() {
                 DeviceType::Block => {
-                    insert_block_device(transport);
+                    let block_device = VirtIOBlk::<VirtIOHal, _>::new(transport).unwrap();
+                    {
+                        let mut block_devices = BLOCK_DEVICES.lock();
+                        block_devices.insert(Mutex::new(block_device));
+                        drop(block_devices);
+                    }
                 }
                 DeviceType::Console => {
-                    let console = VirtIOConsole::<VirtIOHal, MmioTransport<'_>>::new(transport).unwrap();
-                    *CONSOLE.lock() = Some(console);
+                    let console = VirtIOConsole::<VirtIOHal, _>::new(transport).unwrap();
+                    let mut global_console = CONSOLE.lock();
+                    if global_console.is_none() {
+                        *global_console = Some(console);
+                    } else {
+                        panic!("Multiple console devices detected.");
+                    }
                 }
                 _ => {}
             }
         }
-    }
-}
-
-fn insert_block_device(transport: MmioTransport<'static>) {
-    let block_device = VirtIOBlk::<VirtIOHal, MmioTransport<'_>>::new(transport).unwrap();
-    
-    let mut journaling_device = rsext4::blockdev::Jbd2Dev::initial_jbd2dev(0, VirtioBlockWrapper::new(block_device), true);
-
-    match rsext4::ext4::Ext4FileSystem::mount(&mut journaling_device) {
-        Ok(filesystem) => {
-
-        },
-        Err(error) => {
-            crate::print::println!("{}", error);
-        },
     }
 }

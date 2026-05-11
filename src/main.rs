@@ -15,8 +15,8 @@ mod programs;
 mod thread;
 mod timer_interrupt;
 mod trap_handler;
-mod virtio_block_wrapper;
 mod virtio_hal;
+mod fatfs;
 
 unsafe extern "C" {
     static _kernel_end: u8;
