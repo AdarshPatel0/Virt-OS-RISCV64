@@ -1,3 +1,4 @@
+use alloc::string::String;
 use fatfs::FileSystem;
 use fatfs::LossyOemCpConverter;
 use fatfs::NullTimeProvider;
@@ -9,10 +10,12 @@ use crate::virtio_hal::VirtIOHal;
 
 pub type FatFileSystem = FileSystem<crate::virtio_fatfs::FatFsBlockDevice<VirtIOHal, MmioTransport<'static>>, NullTimeProvider, LossyOemCpConverter>;
 
-
-pub extern "C" fn new(filesystem: FatFileSystem) -> ! {
+pub fn new(filesystem: FatFileSystem) -> ! {
+    let root_dir = filesystem.root_dir();
+    let mut current_dir = filesystem.root_dir();
+    let mut current_path = String::from("/");
     loop {
-        print!("[{}]$ ", filesystem.volume_label());
+        print!("[{} {}]$ ", filesystem.volume_label(), current_path);
         let input = get_input_string();
         println!();
         let trimmed = input.trim();
@@ -57,6 +60,93 @@ pub extern "C" fn new(filesystem: FatFileSystem) -> ! {
                     } else {
                         println!("Error: No arguments provided");
                     }
+                }
+                "ls" => {
+                    for entry in current_dir.iter() {
+                        match entry {
+                            Ok(e) => {
+                                println!("{}", e.file_name());
+                            }
+                            Err(_) => {
+                                println!("Error reading directory entry");
+                            }
+                        }
+                    }
+                }
+                "cd" => {
+                    if let Some(path) = args.next() {
+                        match path {
+                            "." => {
+                                // Do nothing, we are already here
+                            }
+                            ".." => {
+                                // Only pop if we aren't at the root
+                                if current_path != "/" {
+                                    // Find the last '/' and truncate the string
+                                    if let Some(last_slash_idx) = current_path.rfind('/') {
+                                        if last_slash_idx == 0 {
+                                            current_path = String::from("/");
+                                        } else {
+                                            current_path.truncate(last_slash_idx);
+                                        }
+                                        // Update the actual directory handle
+                                        current_dir = root_dir.open_dir(&current_path).unwrap_or(filesystem.root_dir());
+                                    }
+                                }
+                            }
+                            "/" => {
+                                current_dir = filesystem.root_dir();
+                                current_path = String::from("/");
+                            }
+                            _ => match current_dir.open_dir(path) {
+                                Ok(dir) => {
+                                    current_dir = dir;
+                                    if current_path != "/" {
+                                        current_path.push('/');
+                                    }
+                                    current_path.push_str(path);
+                                }
+                                Err(_) => {
+                                    println!("Error: Directory not found: {}", path);
+                                }
+                            },
+                        }
+                    } else {
+                        println!("Usage: cd <path>");
+                    }
+                }
+                "mkdir" => {
+                    if let Some(name) = args.next() {
+                        if let Err(e) = current_dir.create_dir(name) {
+                            println!("Error creating directory: {:?}", e);
+                        }
+                    } else {
+                        println!("Usage: mkdir <name>");
+                    }
+                }
+                "touch" => {
+                    if let Some(name) = args.next() {
+                        match current_dir.create_file(name) {
+                            Ok(_) => {}
+                            Err(e) => {
+                                println!("Error creating file: {:?}", e);
+                            }
+                        }
+                    } else {
+                        println!("Usage: touch <filename>");
+                    }
+                }
+                "rm" | "rmdir" => {
+                    if let Some(name) = args.next() {
+                        if let Err(e) = current_dir.remove(name) {
+                            println!("Error removing {}: {:?}", name, e);
+                        }
+                    } else {
+                        println!("Usage: {} <name>", command);
+                    }
+                }
+                "pwd" => {
+                    println!("{}", current_path);
                 }
                 _ => {
                     println!("Unknown command: {}", command);
