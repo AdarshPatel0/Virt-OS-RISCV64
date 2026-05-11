@@ -15,6 +15,7 @@ runner = """qemu-system-riscv64 \
   -drive file=disk.img,format=raw,id=hd0 \
   -device virtio-blk-device,drive=hd0 \
   -s -S \
+  -d int,guest_errors \
   -kernel"""
 rustflags = [
   "-C", "link-arg=-T./linker.ld",

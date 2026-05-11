@@ -28,7 +28,7 @@ pub fn new(filesystem: FatFileSystem) -> ! {
         if let Some(command) = args.next() {
             match command {
                 "help" => {
-                    println!("Available commands: help, echo, clear, exit, disk, cd, ls, mkdir, touch, rm, pwd");
+                    println!("Available commands: help, echo, clear, exit, disk, cd, ls, mkdir, mkfile, rm, pwd, read, write");
                 }
                 "exit" => {
                     system_shutdown("Shutdown command executed");
@@ -195,6 +195,10 @@ pub fn new(filesystem: FatFileSystem) -> ! {
                     } else {
                         println!("Usage: write <filename> <text>");
                     }
+                }
+                "memory" => {
+                    let heap = crate::HEAP.lock();
+                    println!("{}, {}", heap.stats_alloc_actual(), heap.stats_total_bytes());
                 }
                 _ => {
                     println!("Unknown command: {}", command);

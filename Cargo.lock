@@ -10,6 +10,7 @@ dependencies = [
  "fatfs",
  "fdt",
  "riscv",
+ "riscv_plic",
  "sbi",
  "slab",
  "spin",
@@ -145,6 +146,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3f2ad9f15a07f4a0e1677124f9120ce7e83ab7e1ca7186af0ca9da529b62e80"
 
 [[package]]
+name = "riscv_plic"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e701d1c6ea06c35a19cb80d213fab87d264798f9bac0aed2730c0e86d297394a"
+dependencies = [
+ "tock-registers",
+]
+
+[[package]]
 name = "safe-mmio"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -210,6 +220,12 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[package]]
+name = "tock-registers"
+version = "0.10.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d2d250f87fb3fb6f225c907cf54381509f47b40b74b1d1f12d2dccbc915bdfe"
 
 [[package]]
 name = "unicode-ident"

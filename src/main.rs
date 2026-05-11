@@ -54,7 +54,8 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         drop(heap);
     };
 
-    drivers::load_drivers(device_tree);
+    drivers::load_plic(&device_tree);
+    drivers::load_drivers(&device_tree);
 
     if let Some(block_device_mutex) = drivers::BLOCK_DEVICES.lock().get_mut(0) {
         let file_system: crate::programs::shell::FatFileSystem = fatfs::FileSystem::new(crate::virtio_fatfs::FatFsBlockDevice::new(block_device_mutex.clone()), fatfs::FsOptions::new()).unwrap();
@@ -67,7 +68,7 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         core::mem::forget(file_system);
     }
 
-    timer_interrupt::set_time_quanta(1_000_000);
+    timer_interrupt::set_time_quanta(10_000_000);
 
     for cpu in device_tree.cpus() {
         let id = cpu.ids().first();

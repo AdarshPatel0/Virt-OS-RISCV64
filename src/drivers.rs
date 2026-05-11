@@ -1,7 +1,8 @@
-use core::ptr::NonNull;
 use alloc::sync::Arc;
+use core::{num::NonZero, ptr::NonNull};
 use fdt::Fdt;
-use spin::{Mutex};
+use riscv_plic::{PLICRegs, Plic};
+use spin::Mutex;
 use virtio_drivers::{
     device::{blk::VirtIOBlk, console::VirtIOConsole},
     transport::{
@@ -10,12 +11,13 @@ use virtio_drivers::{
     },
 };
 
-use crate::virtio_hal::VirtIOHal;
+use crate::{print::println, virtio_hal::VirtIOHal};
 
+pub static PLIC: Mutex<Option<Plic>> = Mutex::new(None);
 pub static CONSOLE: Mutex<Option<VirtIOConsole<VirtIOHal, MmioTransport>>> = Mutex::new(None);
 pub static BLOCK_DEVICES: Mutex<slab::Slab<Arc<Mutex<VirtIOBlk<VirtIOHal, MmioTransport>>>>> = Mutex::new(slab::Slab::new());
 
-pub fn load_drivers(device_tree: Fdt) {
+pub fn load_drivers(device_tree: &Fdt) {
     for node in device_tree.find_all_nodes("/soc/virtio_mmio") {
         let reg = node.reg().unwrap().next().unwrap();
         let mmio_device_address = reg.starting_address as usize;
@@ -37,6 +39,13 @@ pub fn load_drivers(device_tree: Fdt) {
                     let console = VirtIOConsole::<VirtIOHal, _>::new(transport).unwrap();
                     let mut global_console = CONSOLE.lock();
                     if global_console.is_none() {
+                        let interrupts = node.interrupts().unwrap().next().unwrap();
+                        let virtio_irq = NonZero::new(interrupts as u32).unwrap();
+                        if let Some(plic) = PLIC.lock().as_mut() {
+                            plic.set_priority(virtio_irq, 1);
+                            plic.enable(virtio_irq, 1);
+                            plic.set_threshold(1, 0);
+                        }
                         *global_console = Some(console);
                     } else {
                         panic!("Multiple console devices detected.");
@@ -45,5 +54,14 @@ pub fn load_drivers(device_tree: Fdt) {
                 _ => {}
             }
         }
+    }
+}
+
+pub fn load_plic(device_tree: &Fdt) {
+    for node in device_tree.find_all_nodes("/soc/plic") {
+        let mut regs = node.reg().unwrap();
+        let reg = regs.next().unwrap();
+        let plic = unsafe { Plic::new(NonNull::new(reg.starting_address as *mut PLICRegs).unwrap()) };
+        *PLIC.lock() = Some(plic);
     }
 }
