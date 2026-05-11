@@ -2,6 +2,8 @@ use alloc::string::String;
 use fatfs::FileSystem;
 use fatfs::LossyOemCpConverter;
 use fatfs::NullTimeProvider;
+use fatfs::Read;
+use fatfs::Write;
 use virtio_drivers::transport::mmio::MmioTransport;
 
 use crate::libraries::console_utils::*;
@@ -26,7 +28,7 @@ pub fn new(filesystem: FatFileSystem) -> ! {
         if let Some(command) = args.next() {
             match command {
                 "help" => {
-                    println!("Available commands: help, echo, clear, reboot");
+                    println!("Available commands: help, echo, clear, exit, disk, cd, ls, mkdir, touch, rm, pwd");
                 }
                 "exit" => {
                     system_shutdown("Shutdown command executed");
@@ -50,7 +52,7 @@ pub fn new(filesystem: FatFileSystem) -> ! {
                                 for (block_device_id, block_device_mutex) in block_device_ids {
                                     let block_device = block_device_mutex.lock();
                                     let capacity = (block_device.capacity() * 512) as f64 / 1048576 as f64;
-                                    println!("Device id: {}, Capacity: {}MB", block_device_id, capacity);
+                                    println!("Disk id: {}, Capacity: {}MB", block_device_id, capacity);
                                 }
                             }
                             _ => {
@@ -119,7 +121,7 @@ pub fn new(filesystem: FatFileSystem) -> ! {
                         println!("Usage: mkdir <name>");
                     }
                 }
-                "touch" => {
+                "mkfile" => {
                     if let Some(name) = args.next() {
                         match current_dir.create_file(name) {
                             Ok(_) => {}
@@ -131,7 +133,7 @@ pub fn new(filesystem: FatFileSystem) -> ! {
                         println!("Usage: touch <filename>");
                     }
                 }
-                "rm" | "rmdir" => {
+                "rm" => {
                     if let Some(name) = args.next() {
                         if let Err(e) = current_dir.remove(name) {
                             println!("Error removing {}: {:?}", name, e);
@@ -142,6 +144,57 @@ pub fn new(filesystem: FatFileSystem) -> ! {
                 }
                 "pwd" => {
                     println!("{}", current_path);
+                }
+                "read" => {
+                    if let Some(name) = args.next() {
+                        match current_dir.open_file(name) {
+                            Ok(mut file) => {
+                                let mut buffer = [0u8; 512];
+                                loop {
+                                    match file.read(&mut buffer) {
+                                        Ok(0) => break,
+                                        Ok(n) => {
+                                            let s = core::str::from_utf8(&buffer[..n]).unwrap_or("");
+                                            print!("{}", s);
+                                        }
+                                        Err(_) => {
+                                            println!("Error reading file");
+                                            break;
+                                        }
+                                    }
+                                }
+                                println!();
+                            }
+                            Err(_) => {
+                                println!("Error: Could not open file {}", name);
+                            }
+                        }
+                    } else {
+                        println!("Usage: cat <filename>");
+                    }
+                }
+                "write" => {
+                    if let Some(name) = args.next() {
+                        match current_dir.create_file(name) {
+                            Ok(mut file) => {
+                                let mut first = true;
+                                for arg in args {
+                                    if !first {
+                                        file.write_all(b" ").ok();
+                                    }
+                                    file.write_all(arg.as_bytes()).ok();
+                                    first = false;
+                                }
+                                file.flush().ok();
+                                println!("File '{}' written.", name);
+                            }
+                            Err(e) => {
+                                println!("Error opening file for writing: {:?}", e);
+                            }
+                        }
+                    } else {
+                        println!("Usage: write <filename> <text>");
+                    }
                 }
                 _ => {
                     println!("Unknown command: {}", command);
