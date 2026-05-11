@@ -11,7 +11,7 @@ use virtio_drivers::{
     },
 };
 
-use crate::{print::println, virtio_hal::VirtIOHal};
+use crate::virtio_hal::VirtIOHal;
 
 pub static PLIC: Mutex<Option<Plic>> = Mutex::new(None);
 pub static CONSOLE: Mutex<Option<VirtIOConsole<VirtIOHal, MmioTransport>>> = Mutex::new(None);
