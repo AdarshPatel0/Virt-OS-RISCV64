@@ -83,6 +83,11 @@ pub fn get_input_string() -> alloc::string::String {
     }
 }
 
+pub fn clear_screen() {
+    print!("\x1b[2J");
+    print!("\x1b[H");
+}
+
 use core::fmt::{self, Write};
 struct Writer;
 

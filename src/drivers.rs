@@ -1,4 +1,5 @@
 use core::ptr::NonNull;
+use alloc::sync::Arc;
 use fdt::Fdt;
 use spin::{Mutex};
 use virtio_drivers::{
@@ -12,7 +13,7 @@ use virtio_drivers::{
 use crate::virtio_hal::VirtIOHal;
 
 pub static CONSOLE: Mutex<Option<VirtIOConsole<VirtIOHal, MmioTransport>>> = Mutex::new(None);
-pub static BLOCK_DEVICES: Mutex<slab::Slab<Mutex<VirtIOBlk<VirtIOHal, MmioTransport>>>> = Mutex::new(slab::Slab::new());
+pub static BLOCK_DEVICES: Mutex<slab::Slab<Arc<Mutex<VirtIOBlk<VirtIOHal, MmioTransport>>>>> = Mutex::new(slab::Slab::new());
 
 pub fn load_drivers(device_tree: Fdt) {
     for node in device_tree.find_all_nodes("/soc/virtio_mmio") {
@@ -28,7 +29,7 @@ pub fn load_drivers(device_tree: Fdt) {
                     let block_device = VirtIOBlk::<VirtIOHal, _>::new(transport).unwrap();
                     {
                         let mut block_devices = BLOCK_DEVICES.lock();
-                        block_devices.insert(Mutex::new(block_device));
+                        block_devices.insert(Arc::new(Mutex::new(block_device)));
                         drop(block_devices);
                     }
                 }
