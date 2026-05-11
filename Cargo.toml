@@ -11,5 +11,5 @@ buddy_system_allocator = { version = "0.13.0" }
 spin = "0.10.0"
 fdt = "0.1.5"
 virtio-drivers = { version = "0.13.0", features = ["alloc"] }
-fatfs = { git = "https://github.com/rafalh/rust-fatfs", default-features = false, features = ["alloc"] }
-riscv_plic = "0.2.0"
+exfat-slim = "0.5.0"
+aligned = "0.4.3"

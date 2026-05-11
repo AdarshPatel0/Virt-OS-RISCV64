@@ -15,8 +15,8 @@ mod programs;
 mod thread;
 mod timer_interrupt;
 mod trap_handler;
-mod virtio_fatfs;
 mod virtio_hal;
+mod exfat_blockdevice;
 
 unsafe extern "C" {
     static _kernel_end: u8;
@@ -54,19 +54,9 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         drop(heap);
     };
 
-    drivers::load_plic(&device_tree);
     drivers::load_drivers(&device_tree);
 
-    if let Some(block_device_mutex) = drivers::BLOCK_DEVICES.lock().get_mut(0) {
-        let file_system: crate::programs::shell::FatFileSystem = fatfs::FileSystem::new(crate::virtio_fatfs::FatFsBlockDevice::new(block_device_mutex.clone()), fatfs::FsOptions::new()).unwrap();
-        let raw_slice = unsafe {
-            let size = size_of::<crate::programs::shell::FatFileSystem>();
-            let ptr = &file_system as *const crate::programs::shell::FatFileSystem as *const u8;
-            core::slice::from_raw_parts(ptr, size)
-        };
-        thread::create_thread(programs::shell::new as *const u8 as usize, false, 16384, raw_slice);
-        core::mem::forget(file_system);
-    }
+    thread::create_thread(programs::shell::new as *const u8 as usize, false, 16384, &[]);
 
     timer_interrupt::set_time_quanta(10_000_000);
 
