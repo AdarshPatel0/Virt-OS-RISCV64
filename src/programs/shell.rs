@@ -61,35 +61,18 @@ pub fn new(filesystem: FatFileSystem) -> ! {
                         println!("Error: No arguments provided");
                     }
                 }
-                "ls" => {
-                    for entry in current_dir.iter() {
-                        match entry {
-                            Ok(e) => {
-                                println!("{}", e.file_name());
-                            }
-                            Err(_) => {
-                                println!("Error reading directory entry");
-                            }
-                        }
-                    }
-                }
                 "cd" => {
                     if let Some(path) = args.next() {
                         match path {
-                            "." => {
-                                // Do nothing, we are already here
-                            }
+                            "." => {}
                             ".." => {
-                                // Only pop if we aren't at the root
                                 if current_path != "/" {
-                                    // Find the last '/' and truncate the string
-                                    if let Some(last_slash_idx) = current_path.rfind('/') {
-                                        if last_slash_idx == 0 {
+                                    if let Some(last_slash) = current_path.rfind('/') {
+                                        if last_slash == 0 {
                                             current_path = String::from("/");
                                         } else {
-                                            current_path.truncate(last_slash_idx);
+                                            current_path.truncate(last_slash);
                                         }
-                                        // Update the actual directory handle
                                         current_dir = root_dir.open_dir(&current_path).unwrap_or(filesystem.root_dir());
                                     }
                                 }
@@ -113,6 +96,18 @@ pub fn new(filesystem: FatFileSystem) -> ! {
                         }
                     } else {
                         println!("Usage: cd <path>");
+                    }
+                }
+                "ls" => {
+                    for entry in current_dir.iter() {
+                        match entry {
+                            Ok(e) => {
+                                println!("{}", e.file_name());
+                            }
+                            Err(_) => {
+                                println!("Error reading directory entry");
+                            }
+                        }
                     }
                 }
                 "mkdir" => {
