@@ -1,6 +1,8 @@
 #![no_main]
 #![no_std]
 
+use crate::libraries::console_utils::println;
+
 extern crate alloc;
 
 mod context;
@@ -16,6 +18,7 @@ mod thread;
 mod timer_interrupt;
 mod trap_handler;
 mod virtio_hal;
+mod ext4_block_device;
 
 unsafe extern "C" {
     static _kernel_end: u8;
@@ -54,6 +57,14 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
     };
 
     devices::load_virtio_devices(&device_tree);
+
+    if let Some(virtio_blk) = devices::BLOCK_DEVICES.lock().get_mut(0) {
+        let ext4_blk = ext4_block_device::Ext4BlockDevice::new(virtio_blk.clone());
+        let ref mut block_dev = rsext4::Jbd2Dev::initial_jbd2dev(0, ext4_blk, true);
+        let mut fs = rsext4::Ext4FileSystem::mount(block_dev).unwrap();
+        let root = fs.get_root(block_dev).unwrap();
+        println!("{:x}",root.i_flags);
+    }
 
     thread::create_thread(programs::shell::new as *const u8 as usize, false, 16384, &[]);
 
