@@ -1,12 +1,12 @@
 #![allow(unused)]
 
-use crate::{drivers, libraries::thread_utils::thread_yield};
+use crate::{devices, libraries::thread_utils::thread_yield};
 
 extern crate alloc;
 
 pub fn get_ascii_char() -> u8 {
     loop {
-        if let Some(console) = &mut *drivers::CONSOLE.lock() {
+        if let Some(console) = &mut *devices::CONSOLE.lock() {
             if let Ok(result) = console.recv(true) {
                 if let Some(input) = result {
                     return input;
@@ -93,7 +93,7 @@ struct Writer;
 
 impl Write for Writer {
     fn write_str(&mut self, string: &str) -> fmt::Result {
-        if let Some(console) = &mut *drivers::CONSOLE.lock() {
+        if let Some(console) = &mut *devices::CONSOLE.lock() {
             console.send_bytes(string.as_bytes());
         }
         Ok(())

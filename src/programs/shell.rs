@@ -30,7 +30,7 @@ pub fn new() -> ! {
                     println!();
                 }
                 "disks" => {
-                    let block_devices = crate::drivers::BLOCK_DEVICES.lock();
+                    let block_devices = crate::devices::BLOCK_DEVICES.lock();
                     let block_device_ids = block_devices.iter();
                     for (block_device_id, block_device_mutex) in block_device_ids {
                         let block_device = block_device_mutex.lock();

@@ -5,8 +5,9 @@ extern crate alloc;
 
 mod context;
 mod device_tree_utils;
-mod drivers;
+mod devices;
 mod ecall;
+mod ext4_block_device;
 mod hart;
 mod libraries;
 mod panic_handler;
@@ -16,7 +17,6 @@ mod thread;
 mod timer_interrupt;
 mod trap_handler;
 mod virtio_hal;
-mod exfat_blockdevice;
 
 unsafe extern "C" {
     static _kernel_end: u8;
@@ -54,7 +54,12 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         drop(heap);
     };
 
-    drivers::load_drivers(&device_tree);
+    devices::load_virtio_devices(&device_tree);
+
+    let mut block_devices = devices::BLOCK_DEVICES.lock();
+    if let Some(block_device) = block_devices.get_mut(0) {
+        let ext4_block_device = ext4_block_device::Ext4BlockDevice::new(block_device.clone());
+    }
 
     thread::create_thread(programs::shell::new as *const u8 as usize, false, 16384, &[]);
 

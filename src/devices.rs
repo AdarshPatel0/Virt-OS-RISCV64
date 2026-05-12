@@ -15,7 +15,7 @@ use crate::virtio_hal::VirtIOHal;
 pub static CONSOLE: Mutex<Option<VirtIOConsole<VirtIOHal, MmioTransport>>> = Mutex::new(None);
 pub static BLOCK_DEVICES: Mutex<slab::Slab<Arc<Mutex<VirtIOBlk<VirtIOHal, MmioTransport>>>>> = Mutex::new(slab::Slab::new());
 
-pub fn load_drivers(device_tree: &Fdt) {
+pub fn load_virtio_devices(device_tree: &Fdt) {
     for node in device_tree.find_all_nodes("/soc/virtio_mmio") {
         let reg = node.reg().unwrap().next().unwrap();
         let mmio_device_address = reg.starting_address as usize;
