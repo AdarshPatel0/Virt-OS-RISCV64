@@ -9,10 +9,9 @@ dependencies = [
  "buddy_system_allocator",
  "fdt",
  "riscv",
- "rsext4",
  "sbi",
  "slab",
- "spin 0.10.0",
+ "spin",
  "virtio-drivers",
 ]
 
@@ -28,7 +27,7 @@ version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c1af5a01adeeade54c9f5060300227a8ee64c05b6376f28e9b8ee3b72dd2056f"
 dependencies = [
- "spin 0.10.0",
+ "spin",
 ]
 
 [[package]]
@@ -65,15 +64,6 @@ name = "fdt"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "784a4df722dc6267a04af36895398f59d21d07dce47232adf31ec0ff2fa45e67"
-
-[[package]]
-name = "lazy_static"
-version = "1.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
-dependencies = [
- "spin 0.9.8",
-]
 
 [[package]]
 name = "lock_api"
@@ -145,17 +135,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d3f2ad9f15a07f4a0e1677124f9120ce7e83ab7e1ca7186af0ca9da529b62e80"
 
 [[package]]
-name = "rsext4"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f9f27b6a2203735ed22eaf5115c04c1555090ff622dcc7e03f5482d26d8a356"
-dependencies = [
- "bitflags",
- "lazy_static",
- "log",
-]
-
-[[package]]
 name = "safe-mmio"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -181,12 +160,6 @@ name = "slab"
 version = "0.4.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c790de23124f9ab44544d7ac05d60440adc586479ce501c1d6d7da3cd8c9cf5"
-
-[[package]]
-name = "spin"
-version = "0.9.8"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
 
 [[package]]
 name = "spin"
