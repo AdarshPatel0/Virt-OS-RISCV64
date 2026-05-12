@@ -19,7 +19,7 @@
 
 	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
 	// "remoteUser": "root"
-	"postCreateCommand": "sudo apt-get update && sudo apt-get install -y rustup qemu-system-riscv64 dosfstools mtools && rustup default stable && rustup target add riscv64gc-unknown-none-elf && qemu-img create -f raw disk.img 1G && mkfs.vfat -F 32 disk.img && mlabel -i disk.img ::VIRT_OS",
+	"postCreateCommand": "sudo apt-get update && sudo apt-get install -y rustup qemu-system-riscv64 && rustup default stable && rustup target add riscv64gc-unknown-none-elf && qemu-img create -f raw disk.img 1G && mkfs.ext4 disk.img",
 	"customizations": {
 		"vscode": {
 			"extensions": [
