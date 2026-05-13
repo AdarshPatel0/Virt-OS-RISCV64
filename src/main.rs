@@ -7,6 +7,7 @@ mod context;
 mod device_tree_utils;
 mod devices;
 mod ecall;
+mod ext4_block_device;
 mod hart;
 mod libraries;
 mod panic_handler;
@@ -16,7 +17,6 @@ mod thread;
 mod timer_interrupt;
 mod trap_handler;
 mod virtio_hal;
-mod ext4_block_device;
 
 unsafe extern "C" {
     static _kernel_end: u8;
@@ -56,7 +56,22 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
 
     devices::load_virtio_devices(&device_tree);
 
-    thread::create_thread(programs::shell::new as *const u8 as usize, false, 16384, &[]);
+    {
+        let mut block_devices = crate::devices::BLOCK_DEVICES.lock();
+        if let Some(virtio_block_device) = block_devices.get_mut(0) {
+            let ext4_block_device = crate::ext4_block_device::Ext4BlockDevice::new(virtio_block_device.clone());
+            let journaling_block_device = rsext4::Jbd2Dev::initial_jbd2dev(0, ext4_block_device, true);
+            let arguments = {
+                type JBD = rsext4::Jbd2Dev<ext4_block_device::Ext4BlockDevice<virtio_hal::VirtIOHal, virtio_drivers::transport::mmio::MmioTransport<'static>>>;
+                let ptr = (&journaling_block_device) as *const JBD as *const u8;
+                let size = size_of::<JBD>();
+                unsafe { core::slice::from_raw_parts(ptr, size) }
+            };
+            thread::create_thread(programs::shell::new as *const u8 as usize, false, 1048576, arguments);
+            core::mem::forget(journaling_block_device);
+        }
+        drop(block_devices);
+    }
 
     timer_interrupt::set_time_quanta(1_000_000);
 
