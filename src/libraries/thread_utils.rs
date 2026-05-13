@@ -30,7 +30,7 @@ pub fn thread_create<T>(entry: usize, stack_size: usize, arguments: &T) -> usize
     unsafe {
         core::arch::asm!(
             "
-            li a7, 2
+            li a7, 7
             ecall
             ",
             in("a0") entry,
@@ -47,7 +47,7 @@ pub fn thread_wait(thread_id: usize) {
     unsafe {
         core::arch::asm!(
             "
-                li a7, 3
+                li a7, 8
                 ecall
                 ",
             in("a0") thread_id,

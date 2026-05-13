@@ -7,6 +7,8 @@ use virtio_drivers::{
     transport::Transport,
 };
 
+use crate::libraries::console_utils::print;
+
 pub struct Ext4BlockDevice<H: Hal, T: Transport> {
     block_device: Arc<Mutex<VirtIOBlk<H, T>>>,
     sectors_per_block: usize,
@@ -32,7 +34,8 @@ impl<H: Hal, T: Transport> BlockDevice for Ext4BlockDevice<H, T> {
 
     fn read(&mut self, buffer: &mut [u8], block_id: rsext4::bmalloc::AbsoluteBN, _count: u32) -> rsext4::Ext4Result<()> {
         let mut block_device = self.block_device.lock();
-        if let Err(_) = block_device.read_blocks(block_id.as_usize()? * self.sectors_per_block, buffer) {
+        if let Err(err) = block_device.read_blocks(block_id.as_usize()? * self.sectors_per_block, buffer) {
+            print!("{}",err);
             return Ext4Result::Err(Ext4Error::io());
         }
         Ok(())

@@ -21,15 +21,18 @@ pub fn call(context: &mut context::Context) {
             }
         }
         1 => {
+            if thread::QUEUE.lock().is_empty() {
+                riscv::asm::wfi();
+            }
             thread::schedule(context);
             timer_interrupt::update_timer();
         }
-        2 => {
+        7 => {
             let arguments = unsafe { core::slice::from_raw_parts(context.a[2] as *const u8, context.a[3]) };
             let thread_id = thread::create_thread(context.a[0], false, context.a[1], arguments);
             context.a[0] = thread_id;
         }
-        3 => {
+        8 => {
             let success = thread::cleanup_thread(context.a[0]);
             if !success {
                 context.sepc = context.sepc - 4;
@@ -39,7 +42,7 @@ pub fn call(context: &mut context::Context) {
         }
         9 => {
             use sbi::system_reset::*;
-            let _ =system_reset(ResetType::Shutdown, ResetReason::NoReason);
+            let _ = system_reset(ResetType::Shutdown, ResetReason::NoReason);
         }
         10 => unsafe {
             print!("{}", core::char::from_u32_unchecked(context.a[0] as u32));
