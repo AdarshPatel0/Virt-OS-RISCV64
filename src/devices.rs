@@ -26,7 +26,8 @@ pub fn load_virtio_devices(device_tree: &Fdt) {
         if let Ok(transport) = unsafe { MmioTransport::new(header, mmio_size) } {
             match transport.device_type() {
                 DeviceType::Block => {
-                    let block_device = VirtIOBlk::<VirtIOHal, _>::new(transport).unwrap();
+                    let mut block_device = VirtIOBlk::<VirtIOHal, _>::new(transport).unwrap();
+                    block_device.enable_interrupts();
                     {
                         let mut block_devices = BLOCK_DEVICES.lock();
                         block_devices.insert(Arc::new(Mutex::new(block_device)));

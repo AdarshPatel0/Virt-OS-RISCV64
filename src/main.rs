@@ -1,6 +1,8 @@
 #![no_main]
 #![no_std]
 
+use crate::print::println;
+
 extern crate alloc;
 
 mod context;
@@ -53,6 +55,10 @@ extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
         heap.init(kernel_end_address, system_memory_amount - (kernel_end_address - system_memory_base_address));
         drop(heap);
     };
+
+    for node in device_tree.all_nodes() {
+        println!("{}",node.name);
+    }
 
     devices::load_virtio_devices(&device_tree);
 

@@ -159,7 +159,14 @@ fn print_directory_contents(fs: &mut Ext4FileSystem, block_dev: &mut Jbd2Dev<Ext
                     Ok(block_data) => {
                         let entries = rsext4::entries::classic_dir::list_entries(&block_data);
                         for entry in entries {
-                            print!("{} ", entry.name_str().unwrap_or_default());
+                            match entry.file_type {
+                                2 => {
+                                    print!("\x1b[34m{}\x1b[0m ", entry.name_str().unwrap_or_default());
+                                }
+                                _ => {
+                                    print!("{} ", entry.name_str().unwrap_or_default());
+                                }
+                            }
                         }
                         Ok(())
                     }
