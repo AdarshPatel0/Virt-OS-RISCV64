@@ -10,7 +10,11 @@ pub fn get_ascii_char() -> u8 {
             if let Ok(result) = console.recv(true) {
                 if let Some(input) = result {
                     return input;
+                } else {
+                    thread_yield();
                 }
+            } else {
+                thread_yield();
             }
         }
     }

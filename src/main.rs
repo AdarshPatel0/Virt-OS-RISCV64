@@ -1,8 +1,6 @@
 #![no_main]
 #![no_std]
 
-use crate::print::println;
-
 extern crate alloc;
 
 mod context;
@@ -28,8 +26,6 @@ unsafe extern "C" {
 #[global_allocator]
 pub static HEAP: buddy_system_allocator::LockedHeap<32> = buddy_system_allocator::LockedHeap::<32>::empty();
 
-pub static DEVICE_TREE_PTR: spin::Once<usize> = spin::Once::new();
-
 core::arch::global_asm!(
     r#"
     .section .text.entry
@@ -42,23 +38,14 @@ core::arch::global_asm!(
 
 #[unsafe(no_mangle)]
 extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
-    let _ = *DEVICE_TREE_PTR.call_once(|| device_tree_binary_ptr);
     let device_tree = device_tree_utils::get_device_tree(device_tree_binary_ptr);
-
-    let device_memory = device_tree.memory().regions().next().expect("Failed to get device memory region");
-    let system_memory_base_address = device_memory.starting_address as usize;
-    let system_memory_amount = device_memory.size.expect("Failed to get memory amount");
     let kernel_end_address = core::ptr::addr_of!(_kernel_end) as usize;
 
     unsafe {
         let mut heap = HEAP.lock();
-        heap.init(kernel_end_address, system_memory_amount - (kernel_end_address - system_memory_base_address));
+        heap.add_to_heap(kernel_end_address, device_tree_binary_ptr);
         drop(heap);
     };
-
-    for node in device_tree.all_nodes() {
-        println!("{}",node.name);
-    }
 
     devices::load_virtio_devices(&device_tree);
 

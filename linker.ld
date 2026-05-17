@@ -26,12 +26,12 @@ SECTIONS
     *(COMMON)
     _bss_end = .;
   }
-  .stack (NOLOAD) : ALIGN(16)
+  .stack (NOLOAD) : ALIGN(4K)
   {
     _stack_bottom = .;
     . += 0x10000;
     _stack_top = .;
   }
-  . = ALIGN(16);
+  . = ALIGN(4K);
   _kernel_end = .;
 }

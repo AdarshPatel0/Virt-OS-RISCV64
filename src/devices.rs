@@ -3,7 +3,10 @@ use core::ptr::NonNull;
 use fdt::Fdt;
 use spin::Mutex;
 use virtio_drivers::{
-    device::{blk::VirtIOBlk, console::VirtIOConsole},
+    device::{
+        blk::VirtIOBlk,
+        console::VirtIOConsole,
+    },
     transport::{
         DeviceType, Transport,
         mmio::{MmioTransport, VirtIOHeader},
@@ -26,8 +29,7 @@ pub fn load_virtio_devices(device_tree: &Fdt) {
         if let Ok(transport) = unsafe { MmioTransport::new(header, mmio_size) } {
             match transport.device_type() {
                 DeviceType::Block => {
-                    let mut block_device = VirtIOBlk::<VirtIOHal, _>::new(transport).unwrap();
-                    block_device.enable_interrupts();
+                    let block_device = VirtIOBlk::<VirtIOHal, _>::new(transport).unwrap();
                     {
                         let mut block_devices = BLOCK_DEVICES.lock();
                         block_devices.insert(Arc::new(Mutex::new(block_device)));

@@ -10,6 +10,8 @@ use rsext4::Errno;
 use rsext4::Ext4FileSystem;
 use rsext4::Jbd2Dev;
 use rsext4::disknode::Ext4Inode;
+use shell_words::split;
+use time::OffsetDateTime;
 use virtio_drivers::transport::mmio::MmioTransport;
 
 pub fn new(block_dev: &mut Jbd2Dev<Ext4BlockDevice<VirtIOHal, MmioTransport>>) -> ! {
@@ -21,13 +23,17 @@ pub fn new(block_dev: &mut Jbd2Dev<Ext4BlockDevice<VirtIOHal, MmioTransport>>) -
         print!("[{} {}]$ ", volume_name, working_directory);
         let input = get_input_string();
         println!();
-        let trimmed = input.trim();
-        if trimmed.is_empty() {
-            continue;
-        }
-        let mut args = trimmed.split_whitespace().peekable();
+        let arguments = match split(&input) {
+            Ok(arguments) => arguments,
+            Err(error) => {
+                println!("shell: {}", error);
+                continue;
+            }
+        };
+        let mut args = arguments.iter().peekable();
+
         if let Some(command) = args.next() {
-            match command {
+            match command.as_str() {
                 "exit" => {
                     fs.sync_filesystem(block_dev).unwrap();
                     fs.umount(block_dev).unwrap();
@@ -82,16 +88,12 @@ pub fn new(block_dev: &mut Jbd2Dev<Ext4BlockDevice<VirtIOHal, MmioTransport>>) -
                             let path = resolve_path(&working_directory, &arg);
                             if let Err(error) = print_directory_contents(&mut fs, block_dev, &path) {
                                 println!("{}: {}", command, error);
-                            } else {
-                                println!();
                             }
                         }
                     } else {
                         let path = resolve_path(&working_directory, "");
                         if let Err(error) = print_directory_contents(&mut fs, block_dev, &path) {
                             println!("{}: {}", command, error);
-                        } else {
-                            println!();
                         }
                     }
                 }
@@ -143,6 +145,44 @@ pub fn new(block_dev: &mut Jbd2Dev<Ext4BlockDevice<VirtIOHal, MmioTransport>>) -
                         println!("Usage: {} <file_1 file_2 ...> ", command);
                     }
                 }
+                "read" => {
+                    if args.peek().is_some() {
+                        for arg in args {
+                            let path = resolve_path(&working_directory, &arg);
+                            match rsext4::read_file(block_dev, &mut fs, &path) {
+                                Ok(data) => {
+                                    for value in data {
+                                        print!("{}", value as char);
+                                    }
+                                    println!();
+                                }
+                                Err(error) => {
+                                    println!("{}: {}", command, error);
+                                }
+                            }
+                        }
+                    } else {
+                        println!("Usage: {} <file_1 file_2 ...> ", command);
+                    }
+                }
+                "write" => match args.next() {
+                    Some(input_path) => {
+                        let mut data = Vec::new();
+                        let path = resolve_path(&working_directory, input_path);
+                        for arg in args {
+                            for value in arg.bytes() {
+                                data.push(value);
+                            }
+                            data.push(b'\n');
+                        }
+                        if let Err(error) = rsext4::write_file(block_dev, &mut fs, &path, 0, &data) {
+                            println!("{}: {}", command, error);
+                        }
+                    }
+                    None => {
+                        println!("Usage: {} <file> <data>", command);
+                    }
+                },
                 _ => {
                     println!("{}: command not found", command);
                 }
@@ -152,32 +192,51 @@ pub fn new(block_dev: &mut Jbd2Dev<Ext4BlockDevice<VirtIOHal, MmioTransport>>) -
 }
 
 fn print_directory_contents(fs: &mut Ext4FileSystem, block_dev: &mut Jbd2Dev<Ext4BlockDevice<VirtIOHal, MmioTransport>>, path: &str) -> Result<(), String> {
-    match find_inode(fs, block_dev, &path) {
-        Ok(mut inode) => {
-            if inode.is_dir() {
-                match get_inode_block_data(fs, block_dev, &mut inode) {
-                    Ok(block_data) => {
-                        let entries = rsext4::entries::classic_dir::list_entries(&block_data);
-                        for entry in entries {
-                            match entry.file_type {
-                                2 => {
-                                    print!("\x1b[34m{}\x1b[0m ", entry.name_str().unwrap_or_default());
-                                }
-                                _ => {
-                                    print!("{} ", entry.name_str().unwrap_or_default());
-                                }
-                            }
-                        }
-                        Ok(())
-                    }
-                    Err(error) => Err(format!("{}", error)),
-                }
-            } else {
-                Err(format!("{}: Not a directory", path))
-            }
-        }
-        Err(error) => Err(format!("{}", error)),
+    let mut inode = match find_inode(fs, block_dev, &path) {
+        Ok(inode) => inode,
+        Err(error) => return Err(format!("{}", error)),
+    };
+    if !inode.is_dir() {
+        return Err(format!("{}: Not a directory", path));
     }
+    let block_data = match get_inode_block_data(fs, block_dev, &mut inode) {
+        Ok(data) => data,
+        Err(error) => return Err(format!("{}", error)),
+    };
+    let entries = rsext4::entries::classic_dir::list_entries(&block_data);
+    for entry in entries {
+        let entry_name = match entry.file_type {
+            2 => format!("\x1b[34m{}\x1b[0m", entry.name_str().unwrap_or_default()),
+            _ => format!("{}", entry.name_str().unwrap_or_default()),
+        };
+        let permissions = {
+            let flags = [0o400, 0o200, 0o100, 0o040, 0o020, 0o010, 0o004, 0o002, 0o001];
+
+            let chars = ['r', 'w', 'x'];
+
+            let mut result = String::with_capacity(9);
+
+            for (i, flag) in flags.iter().enumerate() {
+                if inode.permissions() & flag != 0 {
+                    result.push(chars[i % 3]);
+                } else {
+                    result.push('-');
+                }
+            }
+
+            result
+        };
+        let time = match OffsetDateTime::from_unix_timestamp(inode.atime_ts(Ext4Inode::LARGE_INODE_SIZE).sec) {
+            Ok(time) => {
+                let (year, month, day) = time.to_calendar_date();
+                let (hour, minute, _) = time.to_hms();
+                format!("{} {} {} {}:{}", year, month, day, hour, minute)
+            },
+            Err(_) => {String::new()},
+        };
+        println!("{} {} {} {} {}", permissions, inode.uid(), inode.gid(), time, entry_name);
+    }
+    Ok(())
 }
 
 fn find_inode(fs: &mut Ext4FileSystem, block_dev: &mut Jbd2Dev<Ext4BlockDevice<VirtIOHal, MmioTransport>>, path: &str) -> Result<Ext4Inode, String> {
