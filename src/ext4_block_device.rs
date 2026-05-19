@@ -7,7 +7,7 @@ use virtio_drivers::{
     transport::Transport,
 };
 
-use crate::libraries::console_utils::print;
+use crate::{devices::RTC, libraries::console_utils::print};
 
 pub struct Ext4BlockDevice<H: Hal, T: Transport> {
     block_device: Arc<Mutex<VirtIOBlk<H, T>>>,
@@ -54,7 +54,11 @@ impl<H: Hal, T: Transport> BlockDevice for Ext4BlockDevice<H, T> {
     }
 
     fn current_time(&self) -> rsext4::Ext4Result<rsext4::Ext4Timestamp> {
-        return Ok(Ext4Timestamp::new(0, 0));
+        let timestamp = match RTC.get() {
+            Some(rtc) => rtc.get_unix_timestamp(),
+            None => 0,
+        };
+        return Ok(Ext4Timestamp::new(timestamp as i64, 0));
     }
 
     fn block_size(&self) -> u32 {

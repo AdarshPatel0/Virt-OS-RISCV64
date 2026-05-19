@@ -1,3 +1,4 @@
+use crate::devices::RTC;
 use crate::ext4_block_device::Ext4BlockDevice;
 use crate::libraries::console_utils::*;
 use crate::libraries::system_utils::*;
@@ -12,6 +13,8 @@ use rsext4::Jbd2Dev;
 use rsext4::disknode::Ext4Inode;
 use shell_words::split;
 use time::OffsetDateTime;
+use time::UtcDateTime;
+
 use virtio_drivers::transport::mmio::MmioTransport;
 
 pub fn new(block_dev: &mut Jbd2Dev<Ext4BlockDevice<VirtIOHal, MmioTransport>>) -> ! {
@@ -56,6 +59,35 @@ pub fn new(block_dev: &mut Jbd2Dev<Ext4BlockDevice<VirtIOHal, MmioTransport>>) -
                         let block_device = block_device_mutex.lock();
                         let capacity = (block_device.capacity() * 512) as f64 / 1048576 as f64;
                         println!("Block Device id: {}\t Capacity: {}MB", block_device_id, capacity);
+                    }
+                }
+                "date" => {
+                    if let Some(rtc) = RTC.get() {
+                        let timestamp = rtc.get_unix_timestamp();
+                        let time = match UtcDateTime::from_unix_timestamp(timestamp as i64) {
+                            Ok(date) => {
+                                let (year, month, day) = date.to_calendar_date();
+                                let weekday = date.weekday();
+                                let (mut hour, minute, second) = date.as_hms();
+                                let meridiem = match hour / 12 {
+                                    0 => {
+                                        format!("AM")
+                                    }
+                                    1 => {
+                                        format!("PM")
+                                    }
+                                    _ => {
+                                        format!("")
+                                    }
+                                };
+                                hour = hour % 12;
+                                format!("{} {} {} {:02}:{:02}:{:02} {} UTC {}", weekday, month, day, hour, minute, second, meridiem, year)
+                            }
+                            Err(error) => {
+                                format!("date: {}", error)
+                            }
+                        };
+                        println!("{}", time);
                     }
                 }
                 "cd" => match args.next() {
@@ -226,13 +258,15 @@ fn print_directory_contents(fs: &mut Ext4FileSystem, block_dev: &mut Jbd2Dev<Ext
 
             result
         };
-        let time = match OffsetDateTime::from_unix_timestamp(inode.atime_ts(Ext4Inode::LARGE_INODE_SIZE).sec) {
+        let time = match OffsetDateTime::from_unix_timestamp(inode.ctime_ts(Ext4Inode::LARGE_INODE_SIZE).sec) {
             Ok(time) => {
-                let (year, month, day) = time.to_calendar_date();
+                let (_, month, day) = time.to_calendar_date();
                 let (hour, minute, _) = time.to_hms();
-                format!("{} {} {} {}:{}", year, month, day, hour, minute)
-            },
-            Err(_) => {String::new()},
+                format!("{} {} {:02}:{:02}", month, day, hour, minute)
+            }
+            Err(_) => {
+                format!("Time/Date Error")
+            }
         };
         println!("{} {} {} {} {}", permissions, inode.uid(), inode.gid(), time, entry_name);
     }

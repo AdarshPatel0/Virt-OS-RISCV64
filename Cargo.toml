@@ -14,3 +14,4 @@ virtio-drivers = { version = "0.13.0", features = ["alloc"] }
 rsext4 = "0.3.7"
 shell-words = { version = "1.1.1", default-features = false }
 time = { version = "0.3.47", default-features = false, features = ["alloc"] }
+riscv_goldfish = "0.1.1"
