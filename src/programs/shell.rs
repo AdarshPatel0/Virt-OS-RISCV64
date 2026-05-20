@@ -2,6 +2,10 @@ use crate::devices::RTC;
 use crate::ext4_block_device::Ext4BlockDevice;
 use crate::libraries::console_utils::*;
 use crate::libraries::system_utils::*;
+use crate::libraries::thread_utils::Semaphore;
+use crate::libraries::thread_utils::thread_create;
+use crate::libraries::thread_utils::thread_exit;
+use crate::libraries::thread_utils::thread_wait;
 use crate::virtio_hal::VirtIOHal;
 use alloc::format;
 use alloc::string::String;
@@ -12,6 +16,7 @@ use rsext4::Ext4FileSystem;
 use rsext4::Jbd2Dev;
 use rsext4::disknode::Ext4Inode;
 use shell_words::split;
+use spin::Mutex;
 use time::OffsetDateTime;
 use time::UtcDateTime;
 
@@ -186,7 +191,6 @@ pub fn new(block_dev: &mut Jbd2Dev<Ext4BlockDevice<VirtIOHal, MmioTransport>>) -
                                     for value in data {
                                         print!("{}", value as char);
                                     }
-                                    println!();
                                 }
                                 Err(error) => {
                                     println!("{}: {}", command, error);
@@ -215,12 +219,33 @@ pub fn new(block_dev: &mut Jbd2Dev<Ext4BlockDevice<VirtIOHal, MmioTransport>>) -
                         println!("Usage: {} <file> <data>", command);
                     }
                 },
+                "example1" => {
+                    let t1 = thread_create::<()>(count as *const u8 as usize, 4096, &());
+                    let t2 = thread_create::<()>(count as *const u8 as usize, 4096, &());
+                    let t3 = thread_create::<()>(count as *const u8 as usize, 4096, &());
+                    let t4 = thread_create::<()>(count as *const u8 as usize, 4096, &());
+                    thread_wait(t1);
+                    thread_wait(t2);
+                    thread_wait(t3);
+                    thread_wait(t4);
+                }
                 _ => {
                     println!("{}: command not found", command);
                 }
             }
         }
     }
+}
+
+static SEM: Mutex<usize> = Mutex::new(2);
+
+fn count() {
+    Semaphore::wait(&SEM);
+    println!("Counting...");
+    for _ in 0..10000000 {}
+    println!("Done");
+    Semaphore::post(&SEM);
+    thread_exit()
 }
 
 fn print_directory_contents(fs: &mut Ext4FileSystem, block_dev: &mut Jbd2Dev<Ext4BlockDevice<VirtIOHal, MmioTransport>>, path: &str) -> Result<(), String> {

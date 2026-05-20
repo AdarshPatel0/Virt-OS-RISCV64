@@ -40,10 +40,13 @@ core::arch::global_asm!(
 extern "C" fn kmain(hart_id: usize, device_tree_binary_ptr: usize) -> ! {
     let device_tree = device_tree_utils::get_device_tree(device_tree_binary_ptr);
     let kernel_end_address = core::ptr::addr_of!(_kernel_end) as usize;
+    let memory_region = device_tree.memory().regions().next().unwrap();
+    let base_address = memory_region.starting_address as usize;
+    let size = memory_region.size.unwrap();
 
     unsafe {
         let mut heap = HEAP.lock();
-        heap.add_to_heap(kernel_end_address, device_tree_binary_ptr);
+        heap.add_to_heap(kernel_end_address, base_address + size);
         drop(heap);
     };
 

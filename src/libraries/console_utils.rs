@@ -11,10 +11,10 @@ pub fn get_ascii_char() -> u8 {
                 if let Some(input) = result {
                     return input;
                 } else {
-                    thread_yield();
+                    // thread_yield();
                 }
             } else {
-                thread_yield();
+                // thread_yield();
             }
         }
     }
